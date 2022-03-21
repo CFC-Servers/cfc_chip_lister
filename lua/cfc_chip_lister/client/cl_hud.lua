@@ -22,6 +22,25 @@ local hudPosX = HUD_POS_X:GetFloat()
 local hudPosY = HUD_POS_Y:GetFloat()
 
 
+local function applyOrRemoveHUDLister()
+    if not hudEnabled then
+        hook.Remove( "HUDPaint", "CFC_ChipLister_DrawHUD" )
+
+        return
+    end
+
+    hook.Add( "HUDPaint", "CFC_ChipLister_DrawHUD", function()
+        local scrW = ScrW()
+        local scrH = ScrH()
+        local size = hudScale * scrW
+
+        surface.SetMaterial( matChipLister )
+        surface.SetDrawColor( 255, 255, 255, 255 )
+        surface.DrawTexturedRect( hudPosX * scrW, hudPosY * scrH, size, size )
+    end )
+end
+
+
 hook.Add( "AddToolMenuCategories", "CFC_ChipLister_AddToolMenuCategories", function()
     spawnmenu.AddToolCategory( "Options", "CFC", "#CFC" )
 end )
@@ -55,6 +74,7 @@ end )
 
 cvars.AddChangeCallback( "cfc_chiplister_hud_enabled", function( _, old, new )
     hudEnabled = new ~= "0"
+    applyOrRemoveHUDLister()
 end )
 
 cvars.AddChangeCallback( "cfc_chiplister_hud_scale", function( _, old, new )
@@ -69,14 +89,5 @@ cvars.AddChangeCallback( "cfc_chiplister_hud_pos_y", function( _, old, new )
     hudPosY = tonumber( new ) or 0.1
 end )
 
-hook.Add( "HUDPaint", "CFC_ChipLister_DrawHUD", function()
-    if not hudEnabled then return end
 
-    local scrW = ScrW()
-    local scrH = ScrH()
-    local size = hudScale * scrW
-
-    surface.SetMaterial( matChipLister )
-    surface.SetDrawColor( 255, 255, 255, 255 )
-    surface.DrawTexturedRect( hudPosX * scrW, hudPosY * scrH, size, size )
-end )
+applyOrRemoveHUDLister()

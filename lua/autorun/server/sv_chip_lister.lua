@@ -207,7 +207,7 @@ hook.Add( "OnEntityRemoved", "CFC_ChipLister_ChipRemoved", function( ent )
 end )
 
 hook.Add( "PlayerDisconnected", "CFC_ChipLister_UpdateListUserCount", function( ply )
-    if not ( ply or {} ).cfcChipLister_usesLister then return end
+    if not ply or not ply.cfcChipLister_usesLister then return end
 
     local ind = tableKeyFromValue( listUsers, ply )
 
