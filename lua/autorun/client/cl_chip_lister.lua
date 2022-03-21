@@ -24,8 +24,8 @@ local COLOR_TEXT = Color( 255, 255, 255, 255 )
 local COLOR_TEXT_FADED
 local COLOR_MICROS
 local COLOR_WORLD = Color( 150, 120, 120, 255 )
-local COLOR_FADE_OFFSET = Color( 0, 0, -0.65 )
-local COLOR_FADE_MICROS_OFFSET = Color( 0, 0, -0.25 )
+local HSV_FADE_OFFSET = Vector( 0, 0, -0.65 )
+local HSV_FADE_MICROS_OFFSET = Vector( 0, 0, -0.25 )
 local CHIP_COLORS = {
     E2 = Color( 216, 34, 45, 255 ),
     SF = Color( 55, 100, 252, 255 ),
@@ -45,8 +45,8 @@ local isValid = IsValid
 local getPlayerByUID = Player
 local rawset = rawset
 local rawget = rawget
-local _colorToHSV = ColorToHSV
-local _hsvToColor = HSVToColor
+local colorToHSV = ColorToHSV
+local hsvToColor = HSVToColor
 local utilJSONToTable = util.JSONToTable
 local utilDecompress = util.Decompress
 local stringLen = string.len
@@ -117,14 +117,6 @@ local listerEnabled = LISTER_ENABLED:GetBool()
 include( "cfc_chip_lister/client/cl_hud.lua" )
 
 
-local function colorToHSV( color )
-    return Color( _colorToHSV( color ) )
-end
-
-local function hsvToColor( color )
-    return _hsvToColor( color.r, color.g, color.b )
-end
-
 local function formatCPUs( num )
     local usageStr = stringFormat( CPUS_FORMAT, num or 0 )
     local leadStr = ""
@@ -152,14 +144,14 @@ local function getTeamColor( ply )
 end
 
 local function fadeColor( color, fadeOverride )
-    local hsv = colorToHSV( color )
-    local off = fadeOverride or COLOR_FADE_OFFSET
+    local h, s, v = colorToHSV( color )
+    local offset = fadeOverride or HSV_FADE_OFFSET
 
-    return _hsvToColor( hsv.r + off.r, hsv.g + off.g, hsv.b + off.b )
+    return hsvToColor( h + offset[1], s + offset[2], v + offset[3] )
 end
 
 COLOR_TEXT_FADED = fadeColor( COLOR_TEXT )
-COLOR_MICROS = fadeColor( COLOR_TEXT, COLOR_FADE_MICROS_OFFSET )
+COLOR_MICROS = fadeColor( COLOR_TEXT, HSV_FADE_MICROS_OFFSET )
 
 
 cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, old, new )
