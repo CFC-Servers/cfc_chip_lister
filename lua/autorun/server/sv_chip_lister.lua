@@ -5,6 +5,7 @@ include( "cfc_chip_lister/shared/sh_chip_lister.lua" )
 local CPU_MULT = 1000000
 local PLAYER_LENGTH_MAX = 20
 local CHIP_LENGTH_MAX = 25
+local MAX_TOTAL_ELEMENTS = 30 * 2
 local ID_WORLD = "[WORLD]"
 local TIMER_NAME = "CFC_ChipLister_UpdateListData"
 local CHIP_SHORTHANDS = { -- Must all be unique two-character strings
@@ -113,6 +114,7 @@ local function updateChipLister()
     local idLookup = {}
     local globalUsage = 0
     local idCount = 0
+    local elemCount = 0
 
     for i = 1, chipCount do
         local chip = rawget( chips, i )
@@ -125,6 +127,7 @@ local function updateChipLister()
             local ownerName
 
             globalUsage = globalUsage + chipUsage
+            elemCount = elemCount + 1
 
             -- For some reason, :IsPlayer() always returns false if obtained locally from entityMeta, it HAS to be called this way
             if isValid( owner ) and owner:IsPlayer() then
@@ -133,17 +136,28 @@ local function updateChipLister()
                 owner = ID_WORLD
                 ownerName = ID_WORLD
             end
-            
+
             local id = rawget( idLookup, owner )
 
             if not id then
+                if elemCount > MAX_TOTAL_ELEMENTS then goto skipEntry end
+
                 idCount = idCount + 1
                 id = idCount
+                elemCount = elemCount + 1
                 rawset( idLookup, owner, id )
             end
 
             local data = rawget( perPlyData, id )
             local dataCount
+
+            if elemCount > MAX_TOTAL_ELEMENTS then
+                if data then
+                    rawset( data, "OwnerUsage", rawget( data, "OwnerUsage" ) + chipUsage )
+                end
+
+                goto skipEntry
+            end
 
             if data then
                 dataCount = rawget( data, "Count" )
@@ -169,6 +183,8 @@ local function updateChipLister()
 
             rawset( data, "Count", dataCount )
         end
+
+        ::skipEntry::
     end
 
     rawset( perPlyData, "Count", idCount )
