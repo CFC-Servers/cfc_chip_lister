@@ -204,7 +204,7 @@ hook.Add( "InitPostEntity", "CFC_ChipLister_InformServerOfPlayerChoice", functio
     end )
 end )
 
-hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply i always LocalPlayer() on client
+hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply is always LocalPlayer() on client
     if key ~= IN_USE then return end
     
     local tr = ply:GetEyeTrace()

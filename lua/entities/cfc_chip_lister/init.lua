@@ -6,9 +6,9 @@ include( "shared.lua" )
 local ErrorModel = "models/error.mdl"
 
 function ENT:KeyValue( key, value )
-	if key == "model" then
-		self.Model = value
-	end
+    if key == "model" then
+        self.Model = value
+    end
 end
 
 function ENT:Initialize()
@@ -18,7 +18,6 @@ function ENT:Initialize()
         self:SetModel( self.Model )
     end
 
-    --self:SetModel( "models/hunter/plates/plate16x16.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
