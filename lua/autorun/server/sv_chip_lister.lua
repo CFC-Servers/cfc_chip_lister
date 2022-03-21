@@ -23,6 +23,8 @@ local isValid = IsValid
 local rawset = rawset
 local rawget = rawget
 local mRound = math.Round
+local utilTableToJSON = util.TableToJSON
+local utilCompress = util.Compress
 local tableInsert = table.insert
 local tableRemove = table.remove
 local tableKeyFromValue = table.KeyFromValue
@@ -34,6 +36,7 @@ local stringTrim = string.Trim
 local getClass
 local getOwner
 local getNick
+local getUserID
 
 do
     local entityMeta = FindMetaTable( "Entity" )
@@ -57,6 +60,7 @@ do
     local playerMeta = FindMetaTable( "Player" )
 
     getNick = playerMeta.Nick
+    getUserID = playerMeta.UserID
 end
 
 local LISTER_INTERVAL = CreateConVar( "cfc_chiplister_interval", 1, convarFlags, "How often (in seconds) the chip lister will update and send info to players.", 0.05, 10 )
@@ -165,7 +169,7 @@ local function updateChipLister()
             else
                 data = {
                     Count = 0,
-                    Owner = owner,
+                    OwnerUID = owner == ID_WORLD and ID_WORLD or getUserID( owner ),
                     OwnerName = ownerName,
                     OwnerUsage = chipUsage,
                 }
@@ -187,11 +191,15 @@ local function updateChipLister()
         ::skipEntry::
     end
 
-    rawset( perPlyData, "Count", idCount )
+    local json = utilTableToJSON( perPlyData )
+    local compressed = utilCompress( json )
+    local compLength = #compressed
 
     net.Start( "CFC_ChipLister_UpdateListData" )
-    net.WriteTable( perPlyData ) -- I would use TableToJSON, Compress, and WriteData, but player and chip names could easily break the formatting
+    net.WriteUInt( idCount, 8 )
     net.WriteUInt( globalUsage, 20 )
+    net.WriteUInt( compLength, 32 )
+    net.WriteData( compressed, compLength )
     net.Send( listUsers )
 end
 

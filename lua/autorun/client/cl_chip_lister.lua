@@ -42,10 +42,13 @@ local matChipLister = CreateMaterial( MATERIAL_NAME, "UnlitGeneric", {
 } )
 
 local isValid = IsValid
+local getPlayerByUID = Player
 local rawset = rawset
 local rawget = rawget
 local _colorToHSV = ColorToHSV
 local _hsvToColor = HSVToColor
+local utilJSONToTable = util.JSONToTable
+local utilDecompress = util.Decompress
 local stringLen = string.len
 local stringSub = string.sub
 local stringFormat = string.format
@@ -220,9 +223,12 @@ end )
 net.Receive( "CFC_ChipLister_UpdateListData", function()
     if not listerEnabled then return end
 
-    local perPlyData = net.ReadTable()
+    local plyCount = net.ReadUInt( 8 )
     local globalUsage = net.ReadUInt( 20 )
-    local plyCount = rawget( perPlyData, "Count" )
+    local compLength = net.ReadUInt( 32 )
+    local compressed = net.ReadData( compLength )
+    local perPlyData = utilJSONToTable( utilDecompress( compressed ) )
+
     local elemCount = 0
     local x = 0
     local xEnd = SCREEN_SIZE_HALF
@@ -256,9 +262,10 @@ net.Receive( "CFC_ChipLister_UpdateListData", function()
     for i = 1, plyCount do
         local data = rawget( perPlyData, i )
         local dataCount = rawget( data, "Count" )
-        local owner = rawget( data, "Owner" )
+        local ownerUID = rawget( data, "OwnerUID" )
         local ownerUsage = rawget( data, "OwnerUsage" )
 
+        local owner = ownerUID == ID_WORLD and ID_WORLD or getPlayerByUID( ownerUID )
         local ownerColor = getTeamColor( owner)
         local ownerColorFaded = fadeColor( ownerColor )
         local ownerUsageStrLead, ownerUsageStr = formatCPUs( ownerUsage )
