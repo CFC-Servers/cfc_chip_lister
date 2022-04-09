@@ -71,7 +71,7 @@ function ENT:DrawTranslucent()
     self:DrawModel()
 
     if halo.RenderedEntity() == self then return end
-    
+
     local entityMatrix = self:GetWorldTransformMatrix()
 
     -- Draw screen here
