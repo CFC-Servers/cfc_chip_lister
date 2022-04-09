@@ -1,0 +1,10 @@
+name: GLuaFixer
+
+on:
+  pull_request:
+    paths:
+      - 'lua/**'
+
+jobs:
+  lint:
+    uses: CFC-Servers/github_action_workflows/.github/workflows/lint_glua.yml@feature/shareable
