@@ -44,7 +44,7 @@ do
     local entityMeta = FindMetaTable( "Entity" )
 
     getClass = entityMeta.GetClass
-    
+
     local _getOwner = entityMeta.GetOwner
     local cppiGetOwner = entityMeta.CPPIGetOwner
 
@@ -97,7 +97,7 @@ end
 
 local function prepareName( str, maxLength )
     str = stringTrim( stringReplace( str or "", "\n", " " ) )
-    
+
     if stringLen( str ) > maxLength then
         str = stringSub( str, 1, maxLength - 3 ) .. "..."
     end
@@ -113,6 +113,75 @@ local function prepareChipName( str )
     return prepareName( str, CHIP_LENGTH_MAX )
 end
 
+local function chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, elemCount )
+    if not IsValid( chip ) then return globalUsage, idCount, elemCount end
+
+    local chipName = prepareChipName( " -" .. getChipName( chip ) )
+    local chipClass = getClass( chip )
+    local chipUsage = normalizeCPUs( getCPUs( chip, chipClass ) )
+    local owner = getOwner( chip )
+    local ownerName
+
+    globalUsage = globalUsage + chipUsage
+    elemCount = elemCount + 1
+
+    -- For some reason, :IsPlayer() always returns false if obtained locally from entityMeta, it HAS to be called this way
+    if IsValid( owner ) and owner:IsPlayer() then
+        ownerName = preparePlyName( getNick( owner ) )
+    else
+        owner = ID_WORLD
+        ownerName = ID_WORLD
+    end
+
+    local id = rawget( idLookup, owner )
+
+    if not id then
+        if elemCount > MAX_TOTAL_ELEMENTS then return globalUsage, idCount, elemCount end
+
+        idCount = idCount + 1
+        id = idCount
+        elemCount = elemCount + 1
+        rawset( idLookup, owner, id )
+    end
+
+    local data = rawget( perPlyData, id )
+    local dataCount
+
+    if elemCount > MAX_TOTAL_ELEMENTS then
+        if data then
+            rawset( data, "OwnerUsage", rawget( data, "OwnerUsage" ) + chipUsage )
+        end
+
+        return globalUsage, idCount, elemCount
+    end
+
+    if data then
+        dataCount = rawget( data, "Count" )
+        rawset( data, "OwnerUsage", rawget( data, "OwnerUsage" ) + chipUsage )
+    else
+        data = {
+            Count = 0,
+            OwnerUID = owner == ID_WORLD and ID_WORLD or getUserID( owner ),
+            OwnerName = ownerName,
+            OwnerUsage = chipUsage,
+        }
+
+        rawset( perPlyData, id, data )
+        dataCount = 0
+    end
+
+    dataCount = dataCount + 1
+    rawset( data, dataCount, chipName )
+    dataCount = dataCount + 1
+    rawset( data, dataCount, CHIP_SHORTHANDS[chipClass] )
+    dataCount = dataCount + 1
+    rawset( data, dataCount, chipUsage )
+
+    rawset( data, "Count", dataCount )
+
+    return globalUsage, idCount, elemCount
+end
+
 local function updateChipLister()
     if listUserCount == 0 then return end
 
@@ -125,72 +194,7 @@ local function updateChipLister()
     for i = 1, chipCount do
         local chip = rawget( chips, i )
 
-        if IsValid( chip ) then
-            local chipName = prepareChipName( " -" .. getChipName( chip ) )
-            local chipClass = getClass( chip )
-            local chipUsage = normalizeCPUs( getCPUs( chip, chipClass ) )
-            local owner = getOwner( chip )
-            local ownerName
-
-            globalUsage = globalUsage + chipUsage
-            elemCount = elemCount + 1
-
-            -- For some reason, :IsPlayer() always returns false if obtained locally from entityMeta, it HAS to be called this way
-            if IsValid( owner ) and owner:IsPlayer() then
-                ownerName = preparePlyName( getNick( owner ) )
-            else
-                owner = ID_WORLD
-                ownerName = ID_WORLD
-            end
-
-            local id = rawget( idLookup, owner )
-
-            if not id then
-                if elemCount > MAX_TOTAL_ELEMENTS then goto skipEntry end
-
-                idCount = idCount + 1
-                id = idCount
-                elemCount = elemCount + 1
-                rawset( idLookup, owner, id )
-            end
-
-            local data = rawget( perPlyData, id )
-            local dataCount
-
-            if elemCount > MAX_TOTAL_ELEMENTS then
-                if data then
-                    rawset( data, "OwnerUsage", rawget( data, "OwnerUsage" ) + chipUsage )
-                end
-
-                goto skipEntry
-            end
-
-            if data then
-                dataCount = rawget( data, "Count" )
-                rawset( data, "OwnerUsage", rawget( data, "OwnerUsage" ) + chipUsage )
-            else
-                data = {
-                    Count = 0,
-                    OwnerUID = owner == ID_WORLD and ID_WORLD or getUserID( owner ),
-                    OwnerName = ownerName,
-                    OwnerUsage = chipUsage,
-                }
-
-                rawset( perPlyData, id, data )
-                dataCount = 0
-            end
-
-            dataCount = dataCount + 1
-            rawset( data, dataCount, chipName )
-            dataCount = dataCount + 1
-            rawset( data, dataCount, CHIP_SHORTHANDS[chipClass] )
-            dataCount = dataCount + 1
-            rawset( data, dataCount, chipUsage )
-
-            rawset( data, "Count", dataCount )
-        end
-
-        ::skipEntry::
+        globalUsage, idCount, elemCount = chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, elemCount )
     end
 
     local json = utilTableToJSON( perPlyData )

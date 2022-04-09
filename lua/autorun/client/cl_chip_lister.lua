@@ -4,14 +4,12 @@ local ID_WORLD = "[WORLD]"
 local CPUS_FORMAT = "%05d"
 local STR_GLOBAL = "Overall Total CPUs: "
 local STR_TOTAL = "Total: "
-local STR_CPUS = " CPUs: "
 local STR_MICROSECONDS = utf8.char( 181 ) .. "s"
 local STR_TITLE = "-----E2/SF Lister-----"
 local STR_TOGGLE = "(Press " .. string.upper( input.LookupBinding( "+use" ) or "e" ) .. "/use to toggle)"
 local STR_ENABLE = "Press " .. string.upper( input.LookupBinding( "+use" ) or "e" ) .. "/use to turn on"
 local STR_WAITING = "Waiting for next update from the server..."
 local RENDER_TARGET_NAME = "cfc_chiplister_rt"
-local MATERIAL_NAME = "cfc_chiplister_screen"
 local FONT_NAME = "CFC_ChipLister_Font"
 local FONT_SIZE = 30
 local MAX_ELEMENTS = 30
@@ -36,14 +34,8 @@ local INFO_OFFSET_OWNER = 0
 local INFO_OFFSET_CHIP = 0
 local TOGGLE_DIST_SQR = TOGGLE_DIST ^ 2
 
-local matChipLister = CreateMaterial( MATERIAL_NAME, "UnlitGeneric", {
-    ["$basetexture"] = RENDER_TARGET_NAME,
-    ["$model"] = 1,
-} )
-
 local IsValid = IsValid
 local getPlayerByUID = Player
-local rawset = rawset
 local rawget = rawget
 local colorToHSV = ColorToHSV
 local hsvToColor = HSVToColor
@@ -83,7 +75,7 @@ do
 
 
     if not file.Exists( "resource/fonts/RobotoMono.ttf", "MOD" ) then
-        local files, folders = file.Find( "resource/fonts/*", "THIRDPARTY" )
+        local files = file.Find( "resource/fonts/*", "THIRDPARTY" )
         local robotoExists = false
 
         for _, v in ipairs( files ) do
@@ -117,7 +109,6 @@ include( "cfc_chip_lister/client/cl_hud.lua" )
 local function formatCPUs( num )
     local usageStr = stringFormat( CPUS_FORMAT, num or 0 )
     local leadStr = ""
-    local numStr = ""
     local leadCount = 0
 
     for i = 1, stringLen( usageStr ) do
@@ -157,7 +148,7 @@ cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, old, new )
     if state == listerEnabled then return end
 
     listerEnabled = state
-    
+
     net.Start( "CFC_ChipLister_SetEnabled" )
     net.WriteBool( listerEnabled )
     net.SendToServer()
@@ -198,7 +189,7 @@ end )
 
 hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply is always LocalPlayer() on client
     if key ~= IN_USE then return end
-    
+
     local tr = ply:GetEyeTrace()
     local ent = tr.Entity
 
