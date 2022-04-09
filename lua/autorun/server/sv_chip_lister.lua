@@ -15,11 +15,13 @@ local CHIP_SHORTHANDS = { -- Must all be unique two-character strings
 
 local listUsers = {}
 local chips = {}
+local listUserRatelimits = {}
+local listUserRatelimitDesStates = {}
 local listUserCount = 0
 local chipCount = 0
 local convarFlags = { FCVAR_ARCHIVE, FCVAR_REPLICATED }
 
-local isValid = IsValid
+local IsValid = IsValid
 local rawset = rawset
 local rawget = rawget
 local mRound = math.Round
@@ -49,7 +51,7 @@ do
     getOwner = function( ent )
         local owner = cppiGetOwner and cppiGetOwner( ent )
 
-        if not isValid( owner ) then
+        if not IsValid( owner ) then
             owner = _getOwner( ent )
         end
 
@@ -123,7 +125,7 @@ local function updateChipLister()
     for i = 1, chipCount do
         local chip = rawget( chips, i )
 
-        if isValid( chip ) then
+        if IsValid( chip ) then
             local chipName = prepareChipName( " -" .. getChipName( chip ) )
             local chipClass = getClass( chip )
             local chipUsage = normalizeCPUs( getCPUs( chip, chipClass ) )
@@ -134,7 +136,7 @@ local function updateChipLister()
             elemCount = elemCount + 1
 
             -- For some reason, :IsPlayer() always returns false if obtained locally from entityMeta, it HAS to be called this way
-            if isValid( owner ) and owner:IsPlayer() then
+            if IsValid( owner ) and owner:IsPlayer() then
                 ownerName = preparePlyName( getNick( owner ) )
             else
                 owner = ID_WORLD
@@ -203,13 +205,29 @@ local function updateChipLister()
     net.Send( listUsers )
 end
 
+local function setListUserState( ply, state )
+    if state then
+        tableInsert( listUsers, ply )
+        listUserCount = listUserCount + 1
+        ply.cfcChipLister_usesLister = true
+    else
+        local ind = tableKeyFromValue( listUsers, ply )
+
+        if ind then
+            tableRemove( listUsers, ind )
+            listUserCount = listUserCount - 1
+            ply.cfcChipLister_usesLister = nil
+        end
+    end
+end
+
 cvars.AddChangeCallback( "cfc_chiplister_interval", function( _, old, new )
     timer.Create( TIMER_NAME, tonumber( new ) or 1, 0, updateChipLister )
 end )
 
 
 hook.Add( "OnEntityCreated", "CFC_ChipLister_ChipCreated", function( ent )
-    if not isValid( ent ) then return end
+    if not IsValid( ent ) then return end
 
     local class = getClass( ent )
 
@@ -220,7 +238,7 @@ hook.Add( "OnEntityCreated", "CFC_ChipLister_ChipCreated", function( ent )
 end )
 
 hook.Add( "OnEntityRemoved", "CFC_ChipLister_ChipRemoved", function( ent )
-    if not isValid( ent ) then return end
+    if not IsValid( ent ) then return end
 
     local class = getClass( ent )
 
@@ -245,20 +263,33 @@ end )
 
 net.Receive( "CFC_ChipLister_SetEnabled", function( _, ply )
     local state = net.ReadBool()
+    local ratelimit = listUserRatelimits[ply]
 
-    if state then
-        tableInsert( listUsers, ply )
-        listUserCount = listUserCount + 1
-        ply.cfcChipLister_usesLister = true
-    else
-        local ind = tableKeyFromValue( listUsers, ply )
+    listUserRatelimitDesStates[ply] = state
 
-        if ind then
-            tableRemove( listUsers, ind )
-            listUserCount = listUserCount - 1
-            ply.cfcChipLister_usesLister = nil
-        end
+    if ratelimit then
+        if ratelimit == 2 then return end
+
+        listUserRatelimits[ply] = 2
+
+        timer.Create( "CFC_ChipLister_NeedlesslyOverkillRatelimit_SetUserEnabled_" .. ply:SteamID(), 1, 1, function()
+            if not IsValid( ply ) then return end
+
+            listUserRatelimits[ply] = nil
+            setListUserState( ply, listUserRatelimitDesStates[ply] )
+        end )
+
+        return
     end
+
+    timer.Create( "CFC_ChipLister_NeedlesslyOverkillRatelimit_SetUserEnabled_" .. ply:SteamID(), 1, 1, function()
+        if not IsValid( ply ) then return end
+
+        listUserRatelimits[ply] = nil
+    end )
+
+    listUserRatelimits[ply] = 1
+    setListUserState( ply, state )
 end )
 
 timer.Create( TIMER_NAME, LISTER_INTERVAL:GetFloat(), 0, updateChipLister )

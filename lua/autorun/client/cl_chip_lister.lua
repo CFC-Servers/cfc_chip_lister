@@ -41,7 +41,7 @@ local matChipLister = CreateMaterial( MATERIAL_NAME, "UnlitGeneric", {
     ["$model"] = 1,
 } )
 
-local isValid = IsValid
+local IsValid = IsValid
 local getPlayerByUID = Player
 local rawset = rawset
 local rawget = rawget
@@ -76,12 +76,9 @@ local FONT_DATA = {
 
 do
     local entityMeta = FindMetaTable( "Entity" )
-
     getClass = entityMeta.GetClass
 
-
     local playerMeta = FindMetaTable( "Player" )
-
     getTeam = playerMeta.Team
 
 
@@ -136,7 +133,7 @@ local function formatCPUs( num )
 end
 
 local function getTeamColor( ply )
-    if ply == ID_WOLRD or not isValid( ply ) then
+    if ply == ID_WOLRD or not IsValid( ply ) then
         return COLOR_WORLD
     end
 
@@ -205,7 +202,7 @@ hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply
     local tr = ply:GetEyeTrace()
     local ent = tr.Entity
 
-    if not isValid( ent ) or getClass( ent ) ~= "cfc_chip_lister" then return end
+    if not IsValid( ent ) or getClass( ent ) ~= "cfc_chip_lister" then return end
     if tr.StartPos:DistToSqr( tr.HitPos ) > TOGGLE_DIST_SQR then return end
 
     ply:ConCommand( "cfc_chiplister_enabled " .. ( listerEnabled and "0" or "1" ) )
