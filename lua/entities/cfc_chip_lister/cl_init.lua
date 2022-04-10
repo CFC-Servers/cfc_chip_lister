@@ -70,8 +70,14 @@ function ENT:RenderScreen()
     surface.DrawTexturedRect( 0, 0, 512, 512 )
 end
 
-function ENT:DrawModelIfClose() -- Only draws the baseplate model if the client is close to it, preventing z-fighting with the screen
-    if self:GetPos():DistToSqr( EyePos() ) > self.cfcChipLister_baseplateHideRangeSqr then return end
+-- Only draws the baseplate model if the client is close to it, preventing z-fighting with the screen
+-- Will forcefully render if client is facing the screen's back, to prevent usage for invis sniping bases
+function ENT:DrawModelIfClose()
+    local basePos = self:GetPos()
+    local eyePos = EyePos()
+    local facingScreen = self:GetUp():Dot( basePos - eyePos ) < 0
+
+    if facingScreen and basePos:DistToSqr( eyePos ) > self.cfcChipLister_baseplateHideRangeSqr then return end
 
     self:DrawModel()
 end
