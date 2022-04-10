@@ -2,6 +2,9 @@ include( "shared.lua" )
 
 ENT.RenderGroup = RENDERGROUP_BOTH
 
+local BASEPLATE_HIDE_RANGE_MIN = 700
+local BASEPLATE_HIDE_RANGE_MULT = 4
+
 local render = render
 local matChipLister = Material( "!cfc_chiplister_screen" )
 local matWritez = Material( "engine/writez" )
@@ -9,7 +12,11 @@ local matWritez = Material( "engine/writez" )
 -- Code taken from Starfall screen rendering. Most likely could be improved.
 
 function ENT:Initialize()
+    local baseSize = self:OBBMaxs()
+    local baseSizeMax = math.max( baseSize[1], math.max( baseSize[2], baseSize[3] ) )
+
     self.BaseClass.Initialize( self )
+    self.cfcChipLister_baseplateHideRangeSqr = math.max( baseSizeMax * BASEPLATE_HIDE_RANGE_MULT, BASEPLATE_HIDE_RANGE_MIN ) ^ 2
 
     local info = self.ListScreenOffsets[self:GetModel()]
 
@@ -63,12 +70,18 @@ function ENT:RenderScreen()
     surface.DrawTexturedRect( 0, 0, 512, 512 )
 end
 
-function ENT:Draw()
+function ENT:DrawModelIfClose() -- Only draws the baseplate model if the client is close to it, preventing z-fighting with the screen
+    if self:GetPos():DistToSqr( EyePos() ) > self.cfcChipLister_baseplateHideRangeSqr then return end
+
     self:DrawModel()
 end
 
+function ENT:Draw()
+    self:DrawModelIfClose()
+end
+
 function ENT:DrawTranslucent()
-    self:DrawModel()
+    self:DrawModelIfClose()
 
     if halo.RenderedEntity() == self then return end
 
@@ -85,7 +98,7 @@ function ENT:DrawTranslucent()
         render.SetStencilZFailOperation( STENCILOPERATION_KEEP )
         render.SetStencilPassOperation( STENCILOPERATION_REPLACE )
         render.SetStencilCompareFunction( STENCILCOMPARISONFUNCTION_ALWAYS )
-        render.SetStencilWriteMask( 1)
+        render.SetStencilWriteMask( 1 )
         render.SetStencilReferenceValue( 1 )
 
         -- First draw a quad that defines the visible area
