@@ -33,6 +33,10 @@ local rtChipLister = GetRenderTarget( RENDER_TARGET_NAME, SCREEN_SIZE, SCREEN_SI
 local INFO_OFFSET_OWNER = 0
 local INFO_OFFSET_CHIP = 0
 local TOGGLE_DIST_SQR = TOGGLE_DIST ^ 2
+local matChipLister = CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
+    ["$basetexture"] = RENDER_TARGET_NAME,
+    ["$model"] = 1,
+} )
 
 local IsValid = IsValid
 local getPlayerByUID = Player
