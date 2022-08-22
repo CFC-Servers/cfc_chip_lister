@@ -7,7 +7,10 @@ local function createChipListerClientConVar( name, default, save, userinfo, text
     return convar
 end
 
-local matChipLister = Material( "!cfc_chiplister_screen" )
+local matChipLister = CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
+    ["$basetexture"] = RENDER_TARGET_NAME,
+    ["$model"] = 1,
+} )
 
 local HUD_ENABLED = createChipListerClientConVar( "cfc_chiplister_hud_enabled", 0, true, false, "Whether or not to display the chip lister on your screen at all times.", 0, 1 )
 local HUD_SCALE = createChipListerClientConVar( "cfc_chiplister_hud_scale", 0.2, true, false, "The size of the chip lister on your HUD, scaled by your screen width.", 0, 1 )
