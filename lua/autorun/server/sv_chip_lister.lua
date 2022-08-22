@@ -43,10 +43,9 @@ local getUserID
 do
     local entityMeta = FindMetaTable( "Entity" )
 
-    getClass = entityMeta.GetClass
-
     local _getOwner = entityMeta.GetOwner
     local cppiGetOwner = entityMeta.CPPIGetOwner
+    getClass = entityMeta.GetClass
 
     getOwner = function( ent )
         local owner = cppiGetOwner and cppiGetOwner( ent )
