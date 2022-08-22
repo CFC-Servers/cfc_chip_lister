@@ -9,7 +9,7 @@ local function createChipListerClientConVar( name, default, save, userinfo, text
 end
 
 local matChipLister = CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
-    ["$basetexture"] = RENDER_TARGET_NAME,
+    ["$basetexture"] = "cfc_chiplister_rt",
     ["$model"] = 1,
 } )
 

@@ -29,10 +29,9 @@ local HSV_FADE_MICROS_OFFSET = Vector( 0, 0, -0.25 )
 
 local ID_WORLD = "[WORLD]"
 local CPUS_FORMAT = "%05d"
-local RENDER_TARGET_NAME = "cfc_chiplister_rt"
 
 
-local rtChipLister = GetRenderTarget( RENDER_TARGET_NAME, SCREEN_SIZE, SCREEN_SIZE )
+local rtChipLister = GetRenderTarget( "cfc_chiplister_rt", SCREEN_SIZE, SCREEN_SIZE )
 local INFO_OFFSET_OWNER = 0
 local INFO_OFFSET_CHIP = 0
 local TOGGLE_DIST_SQR = TOGGLE_DIST ^ 2
