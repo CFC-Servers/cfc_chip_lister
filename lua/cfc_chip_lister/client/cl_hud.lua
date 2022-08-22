@@ -1,7 +1,8 @@
 local clConVars = {}
+local convarPrefix = "cfc_chiplister"
 
 local function createChipListerClientConVar( name, default, save, userinfo, text, min, max )
-    local convar = CreateClientConVar( name, default, save, userinfo, text, min, max )
+    local convar = CreateClientConVar( convarPrefix .. "_" .. name, default, save, userinfo, text, min, max )
     clConVars[name] = convar
 
     return convar
@@ -12,10 +13,10 @@ local matChipLister = CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
     ["$model"] = 1,
 } )
 
-local HUD_ENABLED = createChipListerClientConVar( "cfc_chiplister_hud_enabled", 0, true, false, "Whether or not to display the chip lister on your screen at all times.", 0, 1 )
-local HUD_SCALE = createChipListerClientConVar( "cfc_chiplister_hud_scale", 0.2, true, false, "The size of the chip lister on your HUD, scaled by your screen width.", 0, 1 )
-local HUD_POS_X = createChipListerClientConVar( "cfc_chiplister_hud_pos_x", 0.8, true, false, "The x-position of the chip lister on your HUD, scaled by your screen width.", 0, 1 )
-local HUD_POS_Y = createChipListerClientConVar( "cfc_chiplister_hud_pos_y", 0.2, true, false, "The y-position of the chip lister on your HUD, scaled by your screen height.", 0, 1 )
+local HUD_ENABLED = createChipListerClientConVar( "hud_enabled", 0, true, false, "Whether or not to display the chip lister on your screen at all times.", 0, 1 )
+local HUD_SCALE = createChipListerClientConVar( "hud_scale", 0.2, true, false, "The size of the chip lister on your HUD, scaled by your screen width.", 0, 1 )
+local HUD_POS_X = createChipListerClientConVar( "hud_pos_x", 0.8, true, false, "The x-position of the chip lister on your HUD, scaled by your screen width.", 0, 1 )
+local HUD_POS_Y = createChipListerClientConVar( "hud_pos_y", 0.2, true, false, "The y-position of the chip lister on your HUD, scaled by your screen height.", 0, 1 )
 
 clConVars.cfc_chiplister_enabled = GetConVar( "cfc_chiplister_enabled" )
 
@@ -50,7 +51,7 @@ end )
 
 hook.Add( "PopulateToolMenu", "CFC_ChipLister_PopulateToolMenu", function()
     spawnmenu.AddToolMenuOption( "Options", "CFC", "cfc_chiplister", "#Chip Lister", "", "", function( panel )
-        pcall( function() -- ControlPresets only exists in certain gamemodes
+        ProtectedCall( function() -- ControlPresets only exists in certain gamemodes
             local presetControl = vgui.Create( "ControlPresets", panel )
             local defaults = {}
 

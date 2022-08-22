@@ -75,11 +75,15 @@ end
 function ENT:DrawModelIfClose()
     local basePos = self:GetPos()
     local eyePos = EyePos()
-    local facingScreen = self:GetUp():Dot( basePos - eyePos ) < 0
+    local facingScreenFront = self:GetUp():Dot( basePos - eyePos ) < 0
 
-    if facingScreen and basePos:DistToSqr( eyePos ) > self.cfcChipLister_baseplateHideRangeSqr then return end
+    if facingScreenFront then
+        local tooFarAway = basePos:DistToSqr( eyePos ) > self.cfcChipLister_baseplateHideRangeSqr
 
-    self:DrawModel()
+        if tooFarAway then return end -- The model is z-clipping at this distance, so force it to not render, only showing the screen instead
+    end
+
+    self:DrawModel() -- We're either up close or facing the backside, rendering the model is okay
 end
 
 function ENT:Draw()

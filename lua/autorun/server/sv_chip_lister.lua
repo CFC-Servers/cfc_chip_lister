@@ -51,11 +51,7 @@ do
     getOwner = function( ent )
         local owner = cppiGetOwner and cppiGetOwner( ent )
 
-        if not IsValid( owner ) then
-            owner = _getOwner( ent )
-        end
-
-        return owner
+        return IsValid( owner ) and owner or _getOwner( ent )
     end
 
 
