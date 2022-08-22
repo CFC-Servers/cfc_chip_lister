@@ -1,7 +1,13 @@
 include( "cfc_chip_lister/shared/sh_chip_lister.lua" )
 
-local ID_WORLD = "[WORLD]"
-local CPUS_FORMAT = "%05d"
+local TOGGLE_DIST = 1500
+local MAX_ELEMENTS = 30
+local SCREEN_SIZE = 1024
+local SCREEN_SIZE_HALF = SCREEN_SIZE / 2
+
+local FONT_NAME = "CFC_ChipLister_Font"
+local FONT_SIZE = 30
+
 local STR_GLOBAL = "Overall Total CPUs: "
 local STR_TOTAL = "Total: "
 local STR_MICROSECONDS = utf8.char( 181 ) .. "s"
@@ -9,30 +15,29 @@ local STR_TITLE = "-----E2/SF Lister-----"
 local STR_TOGGLE = "(Press " .. string.upper( input.LookupBinding( "+use" ) or "e" ) .. "/use to toggle)"
 local STR_ENABLE = "Press " .. string.upper( input.LookupBinding( "+use" ) or "e" ) .. "/use to turn on"
 local STR_WAITING = "Waiting for next update from the server..."
-local RENDER_TARGET_NAME = "cfc_chiplister_rt"
-local FONT_NAME = "CFC_ChipLister_Font"
-local FONT_SIZE = 30
-local MAX_ELEMENTS = 30
-local SCREEN_SIZE = 1024
-local SCREEN_SIZE_HALF = SCREEN_SIZE / 2
-local TOGGLE_DIST = 1500
+
 local COLOR_BACKGROUND = Color( 0, 0, 0, 255 )
 local COLOR_DIVIDER = Color( 255, 255, 255, 255 )
 local COLOR_TEXT = Color( 255, 255, 255, 255 )
-local COLOR_TEXT_FADED
-local COLOR_MICROS
 local COLOR_WORLD = Color( 150, 120, 120, 255 )
-local HSV_FADE_OFFSET = Vector( 0, 0, -0.65 )
-local HSV_FADE_MICROS_OFFSET = Vector( 0, 0, -0.25 )
 local CHIP_COLORS = {
     E2 = Color( 216, 34, 45, 255 ),
     SF = Color( 55, 100, 252, 255 ),
 }
+local HSV_FADE_OFFSET = Vector( 0, 0, -0.65 )
+local HSV_FADE_MICROS_OFFSET = Vector( 0, 0, -0.25 )
+
+local ID_WORLD = "[WORLD]"
+local CPUS_FORMAT = "%05d"
+local RENDER_TARGET_NAME = "cfc_chiplister_rt"
+
 
 local rtChipLister = GetRenderTarget( RENDER_TARGET_NAME, SCREEN_SIZE, SCREEN_SIZE )
 local INFO_OFFSET_OWNER = 0
 local INFO_OFFSET_CHIP = 0
 local TOGGLE_DIST_SQR = TOGGLE_DIST ^ 2
+local COLOR_TEXT_FADED
+local COLOR_MICROS
 
 local IsValid = IsValid
 local getPlayerByUID = Player
@@ -142,6 +147,122 @@ COLOR_TEXT_FADED = fadeColor( COLOR_TEXT )
 COLOR_MICROS = fadeColor( COLOR_TEXT, HSV_FADE_MICROS_OFFSET )
 
 
+-- Draws the Chip List data for a single chip
+local function drawChipRow( data, i, ownerColor, elemCount, x, xEnd, y )
+    local baseInd = i * 3 - 2
+    local chipShorthand = rawget( data, baseInd + 1 )
+    local chipUsageStrLead, chipUsageStr = formatCPUs( rawget( data, baseInd + 2 ) )
+
+    surface.SetTextPos( x, y )
+    surface.SetTextColor( ownerColor )
+    surface.DrawText( rawget( data, baseInd ) ) -- chipName
+
+    surface.SetTextPos( xEnd + INFO_OFFSET_CHIP, y )
+    surface.SetTextColor( rawget( CHIP_COLORS, chipShorthand ) )
+    surface.DrawText( chipShorthand .. " " )
+    surface.SetTextColor( COLOR_TEXT_FADED )
+    surface.DrawText( chipUsageStrLead )
+    surface.SetTextColor( COLOR_TEXT )
+    surface.DrawText( chipUsageStr )
+    surface.SetTextColor( COLOR_MICROS )
+    surface.DrawText( STR_MICROSECONDS )
+    y = y + FONT_SIZE
+    elemCount = elemCount + 1
+
+    if elemCount == MAX_ELEMENTS then
+        x = SCREEN_SIZE_HALF
+        xEnd = xEnd + SCREEN_SIZE_HALF
+        y = FONT_SIZE * 4
+    end
+
+    return elemCount, x, xEnd, y -- These should persist between calls
+end
+
+-- Draws the Chip List data of a particular chip owner
+local function drawPlayersChipData( data, elemCount, x, xEnd, y )
+    local dataCount = rawget( data, "Count" )
+    local ownerUID = rawget( data, "OwnerUID" )
+    local ownerUsage = rawget( data, "OwnerUsage" )
+
+    local owner = ownerUID == ID_WORLD and ID_WORLD or getPlayerByUID( ownerUID )
+    local ownerColor = getTeamColor( owner)
+    local ownerColorFaded = fadeColor( ownerColor )
+    local ownerUsageStrLead, ownerUsageStr = formatCPUs( ownerUsage )
+
+    surface.SetTextPos( x, y )
+    surface.SetTextColor( ownerColor )
+    surface.DrawText( rawget( data, "OwnerName" ) )
+
+    surface.SetTextPos( xEnd + INFO_OFFSET_OWNER, y )
+    surface.DrawText( STR_TOTAL )
+    surface.SetTextColor( ownerColorFaded )
+    surface.DrawText( ownerUsageStrLead )
+    surface.SetTextColor( ownerColor )
+    surface.DrawText( ownerUsageStr )
+    surface.SetTextColor( COLOR_MICROS )
+    surface.DrawText( STR_MICROSECONDS )
+    y = y + FONT_SIZE
+    elemCount = elemCount + 1
+
+    if elemCount == MAX_ELEMENTS then
+        x = SCREEN_SIZE_HALF
+        xEnd = xEnd + SCREEN_SIZE_HALF
+        y = FONT_SIZE * 4
+    end
+
+    for i = 1, dataCount / 3 do
+        elemCount, x, xEnd, y = drawChipRow( data, i, ownerColor, elemCount, x, xEnd, y )
+    end
+
+    return elemCount, x, xEnd, y -- These should persist between calls
+end
+
+-- Updates the Chip List material by drawing onto it once per update
+local function updateListDraw( plyCount, globalUsage, perPlyData )
+    local elemCount = 0
+    local x = 0
+    local xEnd = SCREEN_SIZE_HALF
+    local y = 0
+
+    globalUsageStrLead, globalUsageStr = formatCPUs( globalUsage )
+
+    render.PushRenderTarget( rtChipLister )
+    cam.Start2D()
+
+    surface.SetDrawColor( COLOR_BACKGROUND )
+    surface.SetFont( FONT_NAME )
+    surface.SetTextColor( COLOR_TEXT )
+    surface.DrawRect( 0, 0, SCREEN_SIZE, SCREEN_SIZE )
+
+    draw.SimpleText( STR_TITLE, FONT_NAME, SCREEN_SIZE_HALF, 0, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+    y = y + FONT_SIZE
+    draw.SimpleText( STR_TOGGLE, FONT_NAME, SCREEN_SIZE_HALF, y, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+    y = y + FONT_SIZE * 2
+
+    surface.SetTextPos( x, y )
+    surface.DrawText( STR_GLOBAL )
+    surface.SetTextColor( COLOR_TEXT_FADED )
+    surface.DrawText( globalUsageStrLead )
+    surface.SetTextColor( COLOR_TEXT )
+    surface.DrawText( globalUsageStr )
+    surface.SetTextColor( COLOR_MICROS )
+    surface.DrawText( STR_MICROSECONDS )
+    y = y + FONT_SIZE
+
+    for i = 1, plyCount do -- Draw the info of each owner and their chips
+        local data = rawget( perPlyData, i )
+
+        elemCount, x, xEnd, y = drawPlayersChipData( data, elemCount, x, xEnd, y )
+    end
+
+    surface.SetDrawColor( COLOR_DIVIDER )
+    surface.DrawLine( SCREEN_SIZE_HALF, FONT_SIZE * 3, SCREEN_SIZE_HALF, SCREEN_SIZE )
+
+    cam.End2D()
+    render.PopRenderTarget()
+end
+
+
 cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, old, new )
     local state = new ~= "0"
 
@@ -209,100 +330,5 @@ net.Receive( "CFC_ChipLister_UpdateListData", function()
     local compressed = net.ReadData( compLength )
     local perPlyData = utilJSONToTable( utilDecompress( compressed ) )
 
-    local elemCount = 0
-    local x = 0
-    local xEnd = SCREEN_SIZE_HALF
-    local y = 0
-
-    globalUsageStrLead, globalUsageStr = formatCPUs( globalUsage )
-
-    render.PushRenderTarget( rtChipLister )
-    cam.Start2D()
-
-    surface.SetDrawColor( COLOR_BACKGROUND )
-    surface.SetFont( FONT_NAME )
-    surface.SetTextColor( COLOR_TEXT )
-    surface.DrawRect( 0, 0, SCREEN_SIZE, SCREEN_SIZE )
-
-    draw.SimpleText( STR_TITLE, FONT_NAME, SCREEN_SIZE_HALF, 0, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-    y = y + FONT_SIZE
-    draw.SimpleText( STR_TOGGLE, FONT_NAME, SCREEN_SIZE_HALF, y, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-    y = y + FONT_SIZE * 2
-
-    surface.SetTextPos( x, y )
-    surface.DrawText( STR_GLOBAL )
-    surface.SetTextColor( COLOR_TEXT_FADED )
-    surface.DrawText( globalUsageStrLead )
-    surface.SetTextColor( COLOR_TEXT )
-    surface.DrawText( globalUsageStr )
-    surface.SetTextColor( COLOR_MICROS )
-    surface.DrawText( STR_MICROSECONDS )
-    y = y + FONT_SIZE
-
-    for i = 1, plyCount do
-        local data = rawget( perPlyData, i )
-        local dataCount = rawget( data, "Count" )
-        local ownerUID = rawget( data, "OwnerUID" )
-        local ownerUsage = rawget( data, "OwnerUsage" )
-
-        local owner = ownerUID == ID_WORLD and ID_WORLD or getPlayerByUID( ownerUID )
-        local ownerColor = getTeamColor( owner)
-        local ownerColorFaded = fadeColor( ownerColor )
-        local ownerUsageStrLead, ownerUsageStr = formatCPUs( ownerUsage )
-
-        surface.SetTextPos( x, y )
-        surface.SetTextColor( ownerColor )
-        surface.DrawText( rawget( data, "OwnerName" ) )
-
-        surface.SetTextPos( xEnd + INFO_OFFSET_OWNER, y )
-        surface.DrawText( STR_TOTAL )
-        surface.SetTextColor( ownerColorFaded )
-        surface.DrawText( ownerUsageStrLead )
-        surface.SetTextColor( ownerColor )
-        surface.DrawText( ownerUsageStr )
-        surface.SetTextColor( COLOR_MICROS )
-        surface.DrawText( STR_MICROSECONDS )
-        y = y + FONT_SIZE
-        elemCount = elemCount + 1
-
-        if elemCount == MAX_ELEMENTS then
-            x = SCREEN_SIZE_HALF
-            xEnd = xEnd + SCREEN_SIZE_HALF
-            y = FONT_SIZE * 4
-        end
-
-        for i2 = 1, dataCount / 3 do
-            local baseInd = i2 * 3 - 2
-            local chipShorthand = rawget( data, baseInd + 1 )
-            local chipUsageStrLead, chipUsageStr = formatCPUs( rawget( data, baseInd + 2 ) )
-
-            surface.SetTextPos( x, y )
-            surface.SetTextColor( ownerColor )
-            surface.DrawText( rawget( data, baseInd ) ) -- chipName
-
-            surface.SetTextPos( xEnd + INFO_OFFSET_CHIP, y )
-            surface.SetTextColor( rawget( CHIP_COLORS, chipShorthand ) )
-            surface.DrawText( chipShorthand .. " " )
-            surface.SetTextColor( COLOR_TEXT_FADED )
-            surface.DrawText( chipUsageStrLead )
-            surface.SetTextColor( COLOR_TEXT )
-            surface.DrawText( chipUsageStr )
-            surface.SetTextColor( COLOR_MICROS )
-            surface.DrawText( STR_MICROSECONDS )
-            y = y + FONT_SIZE
-            elemCount = elemCount + 1
-
-            if elemCount == MAX_ELEMENTS then
-                x = SCREEN_SIZE_HALF
-                xEnd = xEnd + SCREEN_SIZE_HALF
-                y = FONT_SIZE * 4
-            end
-        end
-    end
-
-    surface.SetDrawColor( COLOR_DIVIDER )
-    surface.DrawLine( SCREEN_SIZE_HALF, FONT_SIZE * 3, SCREEN_SIZE_HALF, SCREEN_SIZE )
-
-    cam.End2D()
-    render.PopRenderTarget()
+    updateListDraw( plyCount, globalUsage, perPlyData )
 end )
