@@ -27,7 +27,7 @@ local function createListerPanel()
 end
 
 
-concommand.Add( "cfc_chiplister_open_hud", createListerPanel )
+concommand.Add( "cfc_chiplister_open_hud", createListerPanel, nil, "Opens the Chip Lister as a HUD element." )
 net.Receive( "CFC_ChipLister_OpenHUD", createListerPanel )
 
 
