@@ -1,9 +1,4 @@
 local listerPanel
-local matChipLister = CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
-    ["$basetexture"] = "cfc_chiplister_rt",
-    ["$model"] = 1,
-} )
-
 
 local function createListerPanel()
     if IsValid( listerPanel ) then
@@ -26,6 +21,11 @@ local function createListerPanel()
     imagePanel:SetImage( "!cfc_chiplister_screen" )
 end
 
+
+CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
+    ["$basetexture"] = "cfc_chiplister_rt",
+    ["$model"] = 1,
+} )
 
 concommand.Add( "cfc_chiplister_open_hud", createListerPanel, nil, "Opens the Chip Lister as a HUD element." )
 net.Receive( "CFC_ChipLister_OpenHUD", createListerPanel )
