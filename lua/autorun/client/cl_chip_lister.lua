@@ -323,7 +323,7 @@ hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply
 
     useIsOnCooldown = true
 
-    timer.simple( USE_COOLDOWN, function()
+    timer.Simple( USE_COOLDOWN, function()
         useIsOnCooldown = false
     end )
 end )
