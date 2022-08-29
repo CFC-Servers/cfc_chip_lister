@@ -4,7 +4,6 @@ local TOGGLE_DIST = 1500
 local MAX_ELEMENTS = 30
 local SCREEN_SIZE = 1024
 local SCREEN_SIZE_HALF = SCREEN_SIZE / 2
-local USE_COOLDOWN = 0.5
 
 local FONT_NAME = "CFC_ChipLister_Font"
 local FONT_SIZE = 30
