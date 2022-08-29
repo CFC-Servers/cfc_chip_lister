@@ -24,8 +24,8 @@ local CHIP_COLORS = {
     E2 = Color( 216, 34, 45, 255 ),
     SF = Color( 55, 100, 252, 255 ),
 }
-local HSV_FADE_OFFSET = Vector( 0, 0, -0.65 )
-local HSV_FADE_MICROS_OFFSET = Vector( 0, 0, -0.25 )
+local HSV_FADE_ADJUST = Vector( 0, 1, 0.35 )
+local HSV_FADE_MICROS_ADJUST = Vector( 0, 1, 0.75 )
 
 local ID_WORLD = "[WORLD]"
 local CPUS_FORMAT = "%05d"
@@ -48,6 +48,7 @@ local utilDecompress = util.Decompress
 local stringLen = string.len
 local stringSub = string.sub
 local stringFormat = string.format
+local mathClamp = math.Clamp
 local teamGetColor = team.GetColor
 local getClass
 local getTeam
@@ -135,15 +136,20 @@ local function getTeamColor( ply )
     return teamGetColor( getTeam( ply ) )
 end
 
+-- fadeOverride:  Vector( hueOffset, saturationMult, valueMult )
 local function fadeColor( color, fadeOverride )
     local h, s, v = colorToHSV( color )
-    local offset = fadeOverride or HSV_FADE_OFFSET
+    local adjustment = fadeOverride or HSV_FADE_ADJUST
 
-    return hsvToColor( h + offset[1], s + offset[2], v + offset[3] )
+    return hsvToColor(
+        mathClamp( h + adjustment[1], 0, 360 ),
+        mathClamp( s * adjustment[2], 0, 1 ),
+        mathClamp( v * adjustment[3], 0, 1 )
+    )
 end
 
 COLOR_TEXT_FADED = fadeColor( COLOR_TEXT )
-COLOR_MICROS = fadeColor( COLOR_TEXT, HSV_FADE_MICROS_OFFSET )
+COLOR_MICROS = fadeColor( COLOR_TEXT, HSV_FADE_MICROS_ADJUST )
 
 
 -- Draws the Chip List data for a single chip
