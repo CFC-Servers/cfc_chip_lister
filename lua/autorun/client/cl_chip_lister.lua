@@ -32,7 +32,6 @@ local ID_WORLD = "[WORLD]"
 local CPUS_FORMAT = "%05d"
 
 
-local useIsOnCooldown = false
 local rtChipLister = GetRenderTarget( "cfc_chiplister_rt", SCREEN_SIZE, SCREEN_SIZE )
 local INFO_OFFSET_OWNER = 0
 local INFO_OFFSET_CHIP = 0
@@ -317,7 +316,7 @@ end )
 
 hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply is always LocalPlayer() on client
     if key ~= IN_USE then return end
-    if useIsOnCooldown then return end
+    if not IsFirstTimePredicted() then return end
 
     local tr = ply:GetEyeTrace()
     local ent = tr.Entity
@@ -326,12 +325,6 @@ hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply
     if tr.StartPos:DistToSqr( tr.HitPos ) > TOGGLE_DIST_SQR then return end
 
     ply:ConCommand( "cfc_chiplister_enabled " .. ( listerEnabled and "0" or "1" ) )
-
-    useIsOnCooldown = true
-
-    timer.Simple( USE_COOLDOWN, function()
-        useIsOnCooldown = false
-    end )
 end )
 
 
