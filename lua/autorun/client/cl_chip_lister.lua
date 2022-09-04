@@ -190,7 +190,7 @@ local function drawPlayersChipData( data, elemCount, x, xEnd, y )
     local ownerUsage = rawget( data, "OwnerUsage" )
 
     local owner = ownerUID == ID_WORLD and ID_WORLD or getPlayerByUID( ownerUID )
-    local ownerColor = getTeamColor( owner)
+    local ownerColor = getTeamColor( owner )
     local ownerColorFaded = fadeColor( ownerColor )
     local ownerUsageStrLead, ownerUsageStr = formatCPUs( ownerUsage )
 
@@ -268,7 +268,7 @@ local function updateListDraw( plyCount, globalUsage, perPlyData )
 end
 
 
-cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, old, new )
+cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, _, new )
     local state = new ~= "0"
 
     if state == listerEnabled then return end

@@ -222,7 +222,7 @@ local function setListUserState( ply, state )
     end
 end
 
-cvars.AddChangeCallback( "cfc_chiplister_interval", function( _, old, new )
+cvars.AddChangeCallback( "cfc_chiplister_interval", function( _, _, new )
     timer.Create( TIMER_NAME, tonumber( new ) or 1, 0, updateChipLister )
 end )
 
