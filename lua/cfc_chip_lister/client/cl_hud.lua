@@ -1,5 +1,13 @@
 local listerPanel
 
+local PANEL_MIN_SIZE = 200
+
+local PANEL_PERSIST = CreateClientConVar( "cfc_chiplister_hud_persist", 0, true, false, "Causes the chiplister HUD element to persist across sessions." )
+local PANEL_POS_X = CreateClientConVar( "cfc_chiplister_hud_pos_x", 50, true, false, "X-Position of the chiplister HUD element." )
+local PANEL_POS_Y = CreateClientConVar( "cfc_chiplister_hud_pos_y", 25, true, false, "Y-Position of the chiplister HUD element." )
+local PANEL_SIZE = CreateClientConVar( "cfc_chiplister_hud_size", 275, true, false, "Size of the chiplister HUD element." )
+
+
 local function createListerPanel()
     if IsValid( listerPanel ) then
         listerPanel:Show()
@@ -9,8 +17,8 @@ local function createListerPanel()
     end
 
     listerPanel = vgui.Create( "DFrame" )
-    listerPanel:SetSize( 480, 480 )
-    listerPanel:Center()
+    listerPanel:SetSize( PANEL_SIZE:GetInt(), PANEL_SIZE:GetInt() )
+    listerPanel:SetPos( PANEL_POS_X:GetInt(), PANEL_POS_Y:GetInt() )
     listerPanel:SetSizable( true )
     listerPanel:SetScreenLock( true )
     listerPanel:SetTitle( "E2/SF Lister" )
@@ -19,6 +27,28 @@ local function createListerPanel()
     imagePanel:SetPos( 10, 35 )
     imagePanel:Dock( FILL )
     imagePanel:SetImage( "!cfc_chiplister_screen" )
+
+
+    function listerPanel:OnClose()
+        LocalPlayer():ConCommand( "cfc_chiplister_hud_persist 0" )
+    end
+
+    local _SetPos = listerPanel.SetPos
+    function listerPanel:SetPos( x, y )
+        _SetPos( self, x, y )
+        LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_x " .. x )
+        LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_y " .. y )
+    end
+
+    local _SetSize = listerPanel.SetSize
+    function listerPanel:SetSize( w, h )
+        local size = math.max( math.min( w, h ), PANEL_MIN_SIZE ) -- Keep it as a square
+
+        _SetSize( self, size, size )
+        LocalPlayer():ConCommand( "cfc_chiplister_hud_size " .. size )
+    end
+
+    LocalPlayer():ConCommand( "cfc_chiplister_hud_persist 1" )
 end
 
 
@@ -42,13 +72,8 @@ hook.Add( "PopulateToolMenu", "CFC_ChipLister_PopulateToolMenu", function()
     end )
 end )
 
-hook.Add( "Think", "CFC_ChipLister_ResizeHUD", function()
-    if not IsValid( listerPanel ) then return end
+hook.Add( "InitPostEntity", "CFC_ChipLister_OpenHUD", function()
+    if not PANEL_PERSIST:GetBool() then return end
 
-    local w, h = listerPanel:GetSize()
-
-    if w == h then return end
-
-    local size = math.min( w, h )
-    listerPanel:SetSize( size, size )
+    timer.Simple( 5, createListerPanel )
 end )
