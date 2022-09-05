@@ -223,7 +223,7 @@ local function drawPlayersChipData( data, elemCount, x, xEnd, y )
 end
 
 -- Updates the Chip List material by drawing onto it once per update
-local function updateListDraw( plyCount, globalUsage, perPlyData )
+local function updateListDraw( globalUsage, perPlyData )
     local elemCount = 0
     local x = 0
     local xEnd = SCREEN_SIZE_HALF
@@ -254,11 +254,7 @@ local function updateListDraw( plyCount, globalUsage, perPlyData )
     surface.DrawText( STR_MICROSECONDS )
     y = y + FONT_SIZE
 
-    for i = 1, plyCount do -- Draw the info of each owner and their chips
-        local data = rawget( perPlyData, i )
-
-        if not data then break end -- Sometimes some addon manages to bug out hard enough to empty out our table. Needs to be looked into, but this will avoid an error for the time being.
-
+    for _, data in ipairs( perPlyData ) do -- Draw the info of each owner and their chips
         elemCount, x, xEnd, y = drawPlayersChipData( data, elemCount, x, xEnd, y )
     end
 
@@ -332,11 +328,10 @@ end )
 net.Receive( "CFC_ChipLister_UpdateListData", function()
     if not listerEnabled then return end
 
-    local plyCount = net.ReadUInt( 8 )
     local globalUsage = net.ReadUInt( 20 )
     local compLength = net.ReadUInt( 32 )
     local compressed = net.ReadData( compLength )
     local perPlyData = utilJSONToTable( utilDecompress( compressed ) )
 
-    updateListDraw( plyCount, globalUsage, perPlyData )
+    updateListDraw( globalUsage, perPlyData )
 end )
