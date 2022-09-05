@@ -257,6 +257,8 @@ local function updateListDraw( plyCount, globalUsage, perPlyData )
     for i = 1, plyCount do -- Draw the info of each owner and their chips
         local data = rawget( perPlyData, i )
 
+        if not data then break end -- Sometimes some addon manages to bug out hard enough to empty out our table. Needs to be looked into, but this will avoid an error for the time being.
+
         elemCount, x, xEnd, y = drawPlayersChipData( data, elemCount, x, xEnd, y )
     end
 
