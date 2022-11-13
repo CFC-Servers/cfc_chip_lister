@@ -265,12 +265,33 @@ local function updateListDraw( globalUsage, perPlyData )
     render.PopRenderTarget()
 end
 
+local function displayWaitingMessage()
+    render.PushRenderTarget( rtChipLister )
+    cam.Start2D()
 
-cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, _, new )
-    local state = new ~= "0"
+        surface.SetDrawColor( COLOR_BACKGROUND )
+        surface.DrawRect( 0, 0, SCREEN_SIZE, SCREEN_SIZE )
 
-    if state == listerEnabled then return end
+        draw.SimpleText( STR_WAITING, FONT_NAME, SCREEN_SIZE_HALF, SCREEN_SIZE_HALF, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 
+    cam.End2D()
+    render.PopRenderTarget()
+end
+
+local function displayDisabledMessage()
+    render.PushRenderTarget( rtChipLister )
+    cam.Start2D()
+
+        surface.SetDrawColor( COLOR_BACKGROUND )
+        surface.DrawRect( 0, 0, SCREEN_SIZE, SCREEN_SIZE )
+
+        draw.SimpleText( STR_ENABLE, FONT_NAME, SCREEN_SIZE_HALF, SCREEN_SIZE_HALF, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+
+    cam.End2D()
+    render.PopRenderTarget()
+end
+
+local function setListerEnabled( state )
     listerEnabled = state
 
     net.Start( "CFC_ChipLister_SetEnabled" )
@@ -278,36 +299,26 @@ cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, _, new )
     net.SendToServer()
 
     if listerEnabled then
-        render.PushRenderTarget( rtChipLister )
-        cam.Start2D()
-
-            surface.SetDrawColor( COLOR_BACKGROUND )
-            surface.DrawRect( 0, 0, SCREEN_SIZE, SCREEN_SIZE )
-
-            draw.SimpleText( STR_WAITING, FONT_NAME, SCREEN_SIZE_HALF, SCREEN_SIZE_HALF, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
-
-        cam.End2D()
-        render.PopRenderTarget()
+        displayWaitingMessage()
     else
-        render.PushRenderTarget( rtChipLister )
-        cam.Start2D()
-
-            surface.SetDrawColor( COLOR_BACKGROUND )
-            surface.DrawRect( 0, 0, SCREEN_SIZE, SCREEN_SIZE )
-
-            draw.SimpleText( STR_ENABLE, FONT_NAME, SCREEN_SIZE_HALF, SCREEN_SIZE_HALF, COLOR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
-
-        cam.End2D()
-        render.PopRenderTarget()
+        displayDisabledMessage()
     end
+end
+
+
+cvars.AddChangeCallback( "cfc_chiplister_enabled", function( _, _, new )
+    local state = new ~= "0"
+
+    if state == listerEnabled then return end
+
+    setListerEnabled( state )
 end )
 
 
 hook.Add( "InitPostEntity", "CFC_ChipLister_InformServerOfPlayerChoice", function()
     timer.Simple( 10, function()
-        net.Start( "CFC_ChipLister_SetEnabled" )
-        net.WriteBool( LISTER_ENABLED:GetBool() )
-        net.SendToServer()
+        -- Initialize on join
+        setListerEnabled( LISTER_ENABLED:GetBool() )
     end )
 end )
 
