@@ -129,7 +129,7 @@ local function formatCPUs( num )
 end
 
 local function getTeamColor( ply )
-    if ply == ID_WOLRD or not IsValid( ply ) then
+    if ply == ID_WORLD or not IsValid( ply ) then
         return COLOR_WORLD
     end
 
