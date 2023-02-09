@@ -24,6 +24,9 @@ function ENT:Initialize()
     self:SetUseType( SIMPLE_USE )
 
     self:AddEFlags( EFL_FORCE_CHECK_TRANSMIT )
+
+    self:SetMaterial( "models/debug/debugwhite" )
+    self:SetColor( Color( 36, 36, 36, 255 ) )
 end
 
 function ENT:UpdateTransmitState()
