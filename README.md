@@ -1,6 +1,12 @@
 # cfc_chip_lister
 Adds a board to track the owners, names, and processing time of Expression 2 and Starfall chips in GMod.
 
+## Chat commands
+
+| Command | Arguments | Description |
+| :---: | :---: | :---: |
+| !chiplister |  | Toggles the Chip Lister as a HUD element. |
+
 ## Server Convars
 
 | Convar | Description | Default |
