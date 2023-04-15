@@ -51,6 +51,12 @@ local function createListerPanel()
     LocalPlayer():ConCommand( "cfc_chiplister_hud_persist 1" )
 end
 
+local function closeListerPanel()
+    if not IsValid( listerPanel ) then return end
+
+    listerPanel:Close()
+end
+
 
 CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
     ["$basetexture"] = "cfc_chiplister_rt",
@@ -58,6 +64,7 @@ CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
 } )
 
 concommand.Add( "cfc_chiplister_open_hud", createListerPanel, nil, "Opens the Chip Lister as a HUD element." )
+concommand.Add( "cfc_chiplister_close_hud", closeListerPanel, nil, "Closes the Chip Lister HUD element." )
 net.Receive( "CFC_ChipLister_OpenHUD", createListerPanel )
 
 
