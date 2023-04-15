@@ -57,6 +57,14 @@ local function closeListerPanel()
     listerPanel:Close()
 end
 
+local function toggleListerPanel()
+    if PANEL_PERSIST:GetBool() then
+        closeListerPanel()
+    else
+        createListerPanel()
+    end
+end
+
 
 CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
     ["$basetexture"] = "cfc_chiplister_rt",
@@ -65,7 +73,7 @@ CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
 
 concommand.Add( "cfc_chiplister_open_hud", createListerPanel, nil, "Opens the Chip Lister as a HUD element." )
 concommand.Add( "cfc_chiplister_close_hud", closeListerPanel, nil, "Closes the Chip Lister HUD element." )
-net.Receive( "CFC_ChipLister_OpenHUD", createListerPanel )
+net.Receive( "CFC_ChipLister_ToggleHUD", toggleListerPanel )
 
 
 hook.Add( "AddToolMenuCategories", "CFC_ChipLister_AddToolMenuCategories", function()
