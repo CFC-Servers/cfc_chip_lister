@@ -8,7 +8,7 @@ local CHIP_LENGTH_MAX = 25
 local MAX_TOTAL_ELEMENTS = 30 * 2
 local ID_WORLD = "[WORLD]"
 local TIMER_NAME = "CFC_ChipLister_UpdateListData"
-local OPEN_HUD_COMMAND = "!chiplister"
+local TOGGLE_HUD_COMMAND = "!chiplister"
 local CHIP_SHORTHANDS = { -- Must all be unique two-character strings
     gmod_wire_expression2 = "E2",
     starfall_processor = "SF",
@@ -65,7 +65,7 @@ local LISTER_INTERVAL = CreateConVar( "cfc_chiplister_interval", 1, convarFlags,
 
 util.AddNetworkString( "CFC_ChipLister_SetEnabled" )
 util.AddNetworkString( "CFC_ChipLister_UpdateListData" )
-util.AddNetworkString( "CFC_ChipLister_OpenHUD" )
+util.AddNetworkString( "CFC_ChipLister_ToggleHUD" )
 
 
 local function getChipName( ent )
@@ -260,10 +260,10 @@ hook.Add( "PlayerDisconnected", "CFC_ChipLister_UpdateListUserCount", function( 
     end
 end )
 
-hook.Add( "PlayerSay", "CFC_ChipLister_OpenHUD", function( ply, msg )
-    if msg ~= OPEN_HUD_COMMAND then return end
+hook.Add( "PlayerSay", "CFC_ChipLister_ToggleHUD", function( ply, msg )
+    if msg ~= TOGGLE_HUD_COMMAND then return end
 
-    net.Start( "CFC_ChipLister_OpenHUD" )
+    net.Start( "CFC_ChipLister_ToggleHUD" )
     net.Send( ply )
 
     return ""
