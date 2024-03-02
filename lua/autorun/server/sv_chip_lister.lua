@@ -85,7 +85,6 @@ end
 
 -- Rough visibility check for a thin, flat plate.
 local function isPlateVisible( ent, ply )
-    if ply:GetEyeTrace().Entity == ent then return true end
     if not ply:TestPVS( ent ) then return false end
 
     local eyePos = ply:GetShootPos()
@@ -111,6 +110,9 @@ end
 local function canSeeALister( ply, listers )
     if not IsValid( ply ) then return false end
     if ply:GetInfoNum( "cfc_chiplister_hud_persist", 0 ) == 1 then return true end
+
+    local aimEnt = ply:GetEyeTrace().Entity
+    if IsValid( aimEnt ) and aimEnt:GetClass() == "cfc_chip_lister" then return true end
 
     for i = 1, #listers do
         if isPlateVisible( rawget( listers, i ), ply ) then return true end
