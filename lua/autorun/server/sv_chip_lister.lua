@@ -68,6 +68,77 @@ util.AddNetworkString( "CFC_ChipLister_UpdateListData" )
 util.AddNetworkString( "CFC_ChipLister_ToggleHUD" )
 
 
+-- Get the four corners of a thin, flat plate.
+local function getPlateCorners( ent )
+    local obbSizeHalf = ( ent:OBBMaxs() - ent:OBBMins() ) / 2
+    local forward = ent:GetForward() * obbSizeHalf[1]
+    local right = ent:GetRight() * obbSizeHalf[2]
+    local entPos = ent:GetPos()
+
+    return {
+        entPos + forward + right,
+        entPos + forward - right,
+        entPos - forward + right,
+        entPos - forward - right,
+    }
+end
+
+-- Rough visibility check for a thin, flat plate.
+local function isPlateVisible( ent, ply )
+    if ply:GetEyeTrace().Entity == ent then return true end
+    if not ply:TestPVS( ent ) then return false end
+
+    local eyePos = ply:GetShootPos()
+    local eyeDir = ply:GetAimVector()
+    local fov = ply:GetFOV() + 20 -- Actual effective visbility is ~20 degrees more than the stated FOV
+    local dotLimit = math.cos( math.rad( math.Clamp( fov / 2, 0, 90 ) ) )
+
+    for _, point in ipairs( getPlateCorners( ent ) ) do
+        local eyeToPoint = point - eyePos
+        local eyeToPointLength = eyeToPoint:Length()
+
+        if eyeToPointLength == 0 then return true end
+
+        local eyeToPointDir = eyeToPoint / eyeToPointLength
+
+        if eyeDir:Dot( eyeToPointDir ) >= dotLimit then return true end
+    end
+
+    return false
+end
+
+-- Can a player see at least one chip lister?
+local function canSeeALister( ply, listers )
+    if not IsValid( ply ) then return false end
+    if ply:GetInfoNum( "cfc_chiplister_hud_persist", 0 ) == 1 then return true end
+
+    for i = 1, #listers do
+        if isPlateVisible( rawget( listers, i ), ply ) then return true end
+    end
+
+    return false
+end
+
+-- Get all list users who can see at least one chip lister.
+local function getVisibleListUsers()
+    if listUserCount == 0 then return {}, 0 end
+
+    local visibleUsers = {}
+    local visibleUserCount = 0
+    local listers = ents.FindByClass( "cfc_chip_lister" )
+
+    for i = 1, listUserCount do
+        local ply = rawget( listUsers, i )
+
+        if canSeeALister( ply, listers ) then
+            visibleUserCount = visibleUserCount + 1
+            rawset( visibleUsers, visibleUserCount, ply )
+        end
+    end
+
+    return visibleUsers, visibleUserCount
+end
+
 local function getChipName( ent )
     return ent.GetGateName and ent:GetGateName() or "[UNKNOWN]"
 end
@@ -180,7 +251,8 @@ local function chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, e
 end
 
 local function updateChipLister()
-    if listUserCount == 0 then return end
+    local visibleUsers, visibleUserCount = getVisibleListUsers()
+    if visibleUserCount == 0 then return end
 
     local perPlyData = {}
     local idLookup = {}
@@ -202,7 +274,7 @@ local function updateChipLister()
     net.WriteUInt( globalUsage, 20 )
     net.WriteUInt( compLength, 32 )
     net.WriteData( compressed, compLength )
-    net.Send( listUsers )
+    net.Send( visibleUsers )
 end
 
 local function setListUserState( ply, state )
