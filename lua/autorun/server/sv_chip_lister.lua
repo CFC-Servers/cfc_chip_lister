@@ -282,8 +282,8 @@ local function updateListerData()
     local compLength = #compressed
 
     net.Start( "CFC_ChipLister_UpdateListData" )
-    net.WriteUInt( globalUsage, 20 )
-    net.WriteUInt( compLength, 32 )
+    net.WriteUInt( globalUsage, 16 )
+    net.WriteUInt( compLength, 16 )
     net.WriteData( compressed, compLength )
     net.Send( visibleUsers )
 end
