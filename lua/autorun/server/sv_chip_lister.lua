@@ -252,7 +252,7 @@ local function chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, e
     return globalUsage, idCount, elemCount
 end
 
-local function updateChipLister()
+local function updateListerData()
     local visibleUsers, visibleUserCount = getVisibleListUsers()
     if visibleUserCount == 0 then return end
 
@@ -296,7 +296,7 @@ local function setListUserState( ply, state )
 end
 
 cvars.AddChangeCallback( "cfc_chiplister_interval", function( _, _, new )
-    timer.Create( TIMER_NAME, tonumber( new ) or 1, 0, updateChipLister )
+    timer.Create( TIMER_NAME, tonumber( new ) or 1, 0, updateListerData )
 end )
 
 
@@ -375,4 +375,4 @@ net.Receive( "CFC_ChipLister_SetEnabled", function( _, ply )
     setListUserState( ply, state )
 end )
 
-timer.Create( TIMER_NAME, LISTER_INTERVAL:GetFloat(), 0, updateChipLister )
+timer.Create( TIMER_NAME, LISTER_INTERVAL:GetFloat(), 0, updateListerData )
