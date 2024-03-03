@@ -114,8 +114,8 @@ local function canSeeALister( ply, listers )
     local aimEnt = ply:GetEyeTrace().Entity
     if IsValid( aimEnt ) and aimEnt:GetClass() == "cfc_chip_lister" then return true end
 
-    for i = 1, #listers do
-        if isPlateVisible( rawget( listers, i ), ply ) then return true end
+    for _, lister in ipairs( listers ) do
+        if isPlateVisible( lister, ply ) then return true end
     end
 
     return false
@@ -125,13 +125,13 @@ end
 local function getVisibleListUsers()
     if listUserCount == 0 then return {}, 0 end
 
+    local listers = ents.FindByClass( "cfc_chip_lister" )
+    if #listers == 0 then return {}, 0 end
+
     local visibleUsers = {}
     local visibleUserCount = 0
-    local listers = ents.FindByClass( "cfc_chip_lister" )
 
-    for i = 1, listUserCount do
-        local ply = rawget( listUsers, i )
-
+    for _, ply in ipairs( listUsers ) do
         if canSeeALister( ply, listers ) then
             visibleUserCount = visibleUserCount + 1
             rawset( visibleUsers, visibleUserCount, ply )
