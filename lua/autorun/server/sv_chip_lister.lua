@@ -21,6 +21,7 @@ local listUserRatelimitDesStates = {}
 local listUserCount = 0
 local chipCount = 0
 local convarFlags = { FCVAR_ARCHIVE, FCVAR_REPLICATED }
+local cornerCache = {}
 
 local IsValid = IsValid
 local rawset = rawset
@@ -70,17 +71,24 @@ util.AddNetworkString( "CFC_ChipLister_ToggleHUD" )
 
 -- Get the four corners of a thin, flat plate.
 local function getPlateCorners( ent )
+    local corners = cornerCache[ent]
+    if corners then return corners end
+
     local obbSizeHalf = ( ent:OBBMaxs() - ent:OBBMins() ) / 2
     local forward = ent:GetForward() * obbSizeHalf[1]
     local right = ent:GetRight() * obbSizeHalf[2]
     local entPos = ent:GetPos()
 
-    return {
+    corners = {
         entPos + forward + right,
         entPos + forward - right,
         entPos - forward + right,
         entPos - forward - right,
     }
+
+    cornerCache[ent] = corners
+
+    return corners
 end
 
 -- Rough visibility check for a thin, flat plate.
@@ -130,6 +138,7 @@ local function getVisibleListUsers()
 
     local visibleUsers = {}
     local visibleUserCount = 0
+    cornerCache = {} -- Reset corner cache
 
     for _, ply in ipairs( listUsers ) do
         if canSeeALister( ply, listers ) then
