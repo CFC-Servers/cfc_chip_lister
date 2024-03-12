@@ -21,6 +21,7 @@ local listUserRatelimitDesStates = {}
 local listUserCount = 0
 local chipCount = 0
 local convarFlags = { FCVAR_ARCHIVE, FCVAR_REPLICATED }
+local cornerCache = {}
 
 local IsValid = IsValid
 local rawset = rawset
@@ -67,6 +68,87 @@ util.AddNetworkString( "CFC_ChipLister_SetEnabled" )
 util.AddNetworkString( "CFC_ChipLister_UpdateListData" )
 util.AddNetworkString( "CFC_ChipLister_ToggleHUD" )
 
+
+-- Get the four corners of a thin, flat plate.
+local function getPlateCorners( ent )
+    local corners = cornerCache[ent]
+    if corners then return corners end
+
+    local obbSizeHalf = ( ent:OBBMaxs() - ent:OBBMins() ) / 2
+    local forward = ent:GetForward() * obbSizeHalf[1]
+    local right = ent:GetRight() * obbSizeHalf[2]
+    local entPos = ent:GetPos()
+
+    corners = {
+        entPos + forward + right,
+        entPos + forward - right,
+        entPos - forward + right,
+        entPos - forward - right,
+    }
+
+    cornerCache[ent] = corners
+
+    return corners
+end
+
+-- Rough visibility check for a thin, flat plate.
+local function isPlateVisible( ent, ply )
+    if not ply:TestPVS( ent ) then return false end
+
+    local eyePos = ply:GetShootPos()
+    local eyeDir = ply:GetAimVector()
+    local fov = ply:GetFOV() + 20 -- Actual effective visbility is ~20 degrees more than the stated FOV
+    local dotLimit = math.cos( math.rad( math.Clamp( fov / 2, 0, 90 ) ) )
+
+    for _, point in ipairs( getPlateCorners( ent ) ) do
+        local eyeToPoint = point - eyePos
+        local eyeToPointLength = eyeToPoint:Length()
+
+        if eyeToPointLength == 0 then return true end
+
+        local eyeToPointDir = eyeToPoint / eyeToPointLength
+
+        if eyeDir:Dot( eyeToPointDir ) >= dotLimit then return true end
+    end
+
+    return false
+end
+
+-- Can a player see at least one chip lister?
+local function canSeeALister( ply, listers )
+    if not IsValid( ply ) then return false end
+    if ply:GetInfoNum( "cfc_chiplister_hud_persist", 0 ) == 1 then return true end
+
+    local aimEnt = ply:GetEyeTrace().Entity
+    if IsValid( aimEnt ) and aimEnt:GetClass() == "cfc_chip_lister" then return true end
+
+    for _, lister in ipairs( listers ) do
+        if isPlateVisible( lister, ply ) then return true end
+    end
+
+    return false
+end
+
+-- Get all list users who can see at least one chip lister.
+local function getVisibleListUsers()
+    if listUserCount == 0 then return {}, 0 end
+
+    local listers = ents.FindByClass( "cfc_chip_lister" )
+    if #listers == 0 then return {}, 0 end
+
+    local visibleUsers = {}
+    local visibleUserCount = 0
+    cornerCache = {} -- Reset corner cache
+
+    for _, ply in ipairs( listUsers ) do
+        if canSeeALister( ply, listers ) then
+            visibleUserCount = visibleUserCount + 1
+            rawset( visibleUsers, visibleUserCount, ply )
+        end
+    end
+
+    return visibleUsers, visibleUserCount
+end
 
 local function getChipName( ent )
     return ent.GetGateName and ent:GetGateName() or "[UNKNOWN]"
@@ -179,8 +261,9 @@ local function chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, e
     return globalUsage, idCount, elemCount
 end
 
-local function updateChipLister()
-    if listUserCount == 0 then return end
+local function updateListerData()
+    local visibleUsers, visibleUserCount = getVisibleListUsers()
+    if visibleUserCount == 0 then return end
 
     local perPlyData = {}
     local idLookup = {}
@@ -199,10 +282,10 @@ local function updateChipLister()
     local compLength = #compressed
 
     net.Start( "CFC_ChipLister_UpdateListData" )
-    net.WriteUInt( globalUsage, 20 )
-    net.WriteUInt( compLength, 32 )
+    net.WriteUInt( globalUsage, 16 )
+    net.WriteUInt( compLength, 16 )
     net.WriteData( compressed, compLength )
-    net.Send( listUsers )
+    net.Send( visibleUsers )
 end
 
 local function setListUserState( ply, state )
@@ -222,7 +305,7 @@ local function setListUserState( ply, state )
 end
 
 cvars.AddChangeCallback( "cfc_chiplister_interval", function( _, _, new )
-    timer.Create( TIMER_NAME, tonumber( new ) or 1, 0, updateChipLister )
+    timer.Create( TIMER_NAME, tonumber( new ) or 1, 0, updateListerData )
 end )
 
 
@@ -301,4 +384,4 @@ net.Receive( "CFC_ChipLister_SetEnabled", function( _, ply )
     setListUserState( ply, state )
 end )
 
-timer.Create( TIMER_NAME, LISTER_INTERVAL:GetFloat(), 0, updateChipLister )
+timer.Create( TIMER_NAME, LISTER_INTERVAL:GetFloat(), 0, updateListerData )

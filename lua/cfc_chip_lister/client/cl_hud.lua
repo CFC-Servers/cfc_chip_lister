@@ -2,7 +2,7 @@ local listerPanel
 
 local PANEL_MIN_SIZE = 200
 
-local PANEL_PERSIST = CreateClientConVar( "cfc_chiplister_hud_persist", 0, true, false, "Causes the chiplister HUD element to persist across sessions." )
+local PANEL_PERSIST = CreateClientConVar( "cfc_chiplister_hud_persist", 0, true, true, "Causes the chiplister HUD element to persist across sessions." )
 local PANEL_POS_X = CreateClientConVar( "cfc_chiplister_hud_pos_x", 50, true, false, "X-Position of the chiplister HUD element." )
 local PANEL_POS_Y = CreateClientConVar( "cfc_chiplister_hud_pos_y", 25, true, false, "Y-Position of the chiplister HUD element." )
 local PANEL_SIZE = CreateClientConVar( "cfc_chiplister_hud_size", 275, true, false, "Size of the chiplister HUD element." )

@@ -339,8 +339,8 @@ end )
 net.Receive( "CFC_ChipLister_UpdateListData", function()
     if not listerEnabled then return end
 
-    local globalUsage = net.ReadUInt( 20 )
-    local compLength = net.ReadUInt( 32 )
+    local globalUsage = net.ReadUInt( 16 )
+    local compLength = net.ReadUInt( 16 )
     local compressed = net.ReadData( compLength )
     local perPlyData = utilJSONToTable( utilDecompress( compressed ) )
 
