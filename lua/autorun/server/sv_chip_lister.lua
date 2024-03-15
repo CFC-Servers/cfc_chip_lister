@@ -119,7 +119,7 @@ end
 local function canSeeALister( ply, listers )
     if not IsValid( ply ) then return false end
     if ply:GetInfoNum( "cfc_chiplister_hud_persist", 0 ) == 1 then return true end
-    if not listers then return end
+    if not listers then return false end
 
     local aimEnt = ply:GetEyeTrace().Entity
     if IsValid( aimEnt ) and aimEnt:GetClass() == "cfc_chip_lister" then return true end
