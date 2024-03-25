@@ -115,9 +115,11 @@ local function isPlateVisible( ent, ply )
 end
 
 -- Can a player see at least one chip lister?
+-- Give listers as false to only check for the HUD setting (i.e. no lister entities exist).
 local function canSeeALister( ply, listers )
     if not IsValid( ply ) then return false end
     if ply:GetInfoNum( "cfc_chiplister_hud_persist", 0 ) == 1 then return true end
+    if not listers then return false end
 
     local aimEnt = ply:GetEyeTrace().Entity
     if IsValid( aimEnt ) and aimEnt:GetClass() == "cfc_chip_lister" then return true end
@@ -134,7 +136,10 @@ local function getVisibleListUsers()
     if listUserCount == 0 then return {}, 0 end
 
     local listers = ents.FindByClass( "cfc_chip_lister" )
-    if #listers == 0 then return {}, 0 end
+
+    if #listers == 0 then
+        listers = false
+    end
 
     local visibleUsers = {}
     local visibleUserCount = 0
