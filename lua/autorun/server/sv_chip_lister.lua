@@ -162,14 +162,19 @@ end
 local function getCPUs( ent, class )
     if ent.Starfall then
         local instance = ent.instance
+        if not instance then return false end
+        if instance.error then return false end
 
-        return instance and instance:movingCPUAverage() or 0
+        return instance:movingCPUAverage()
     end
 
     if ( class or getClass( ent ) ) == "gmod_wire_expression2" then
-        local context = ent.context
+        if ent.error then return false end
 
-        return context and context.timebench or 0
+        local context = ent.context
+        if not context then return 0 end
+
+        return context.timebench or 0
     end
 
     return 0
@@ -202,7 +207,10 @@ local function chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, e
 
     local chipName = prepareChipName( " -" .. getChipName( chip ) )
     local chipClass = getClass( chip )
-    local chipUsage = normalizeCPUs( getCPUs( chip, chipClass ) )
+    local chipUsage = getCPUs( chip, chipClass )
+    local errored = chipUsage == false
+    chipUsage = normalizeCPUs( chipUsage or 0 )
+
     local owner = getOwner( chip )
     local ownerName
 
@@ -259,7 +267,7 @@ local function chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, e
     dataCount = dataCount + 1
     rawset( data, dataCount, CHIP_SHORTHANDS[chipClass] )
     dataCount = dataCount + 1
-    rawset( data, dataCount, chipUsage )
+    rawset( data, dataCount, errored and -1 or chipUsage )
 
     rawset( data, "Count", dataCount )
 
