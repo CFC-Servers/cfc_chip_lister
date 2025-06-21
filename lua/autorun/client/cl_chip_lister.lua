@@ -22,6 +22,7 @@ local COLOR_BACKGROUND = Color( 0, 0, 0, 255 )
 local COLOR_DIVIDER = Color( 255, 255, 255, 255 )
 local COLOR_TEXT = Color( 255, 255, 255, 255 )
 local COLOR_WORLD = Color( 150, 120, 120, 255 )
+local COLOR_ERR = Color( 150, 40, 0, 255 )
 local CHIP_COLORS = {
     E2 = Color( 216, 34, 45, 255 ),
     SF = Color( 55, 100, 252, 255 ),
@@ -31,6 +32,8 @@ local HSV_FADE_MICROS_ADJUST = Vector( 0, 1, 0.75 )
 
 local ID_WORLD = "[WORLD]"
 local CPUS_FORMAT = "%05d"
+local CPUS_FORMAT_ERR_LEAD = "err "
+local CPUS_FORMAT_ERR_TRAIL = "0"
 
 
 local rtChipLister = GetRenderTarget( "cfc_chiplister_rt", SCREEN_SIZE, SCREEN_SIZE )
@@ -114,6 +117,8 @@ include( "cfc_chip_lister/client/cl_hud.lua" )
 
 
 local function formatCPUs( num )
+    if num == -1 then return CPUS_FORMAT_ERR_LEAD, CPUS_FORMAT_ERR_TRAIL, COLOR_ERR, COLOR_TEXT_FADED end
+
     local usageStr = stringFormat( CPUS_FORMAT, num or 0 )
     local leadStr = ""
     local leadCount = 0
@@ -123,11 +128,11 @@ local function formatCPUs( num )
             leadStr = leadStr .. "0"
             leadCount = leadCount + 1
         else
-            return leadStr, stringSub( usageStr, leadCount + 1 )
+            return leadStr, stringSub( usageStr, leadCount + 1 ), COLOR_TEXT_FADED, COLOR_TEXT
         end
     end
 
-    return leadStr, ""
+    return leadStr, "", COLOR_TEXT_FADED, COLOR_TEXT
 end
 
 local function getTeamColor( ply )
@@ -158,7 +163,7 @@ COLOR_MICROS = fadeColor( COLOR_TEXT, HSV_FADE_MICROS_ADJUST )
 local function drawChipRow( data, i, ownerColor, elemCount, x, xEnd, y )
     local baseInd = i * 3 - 2
     local chipShorthand = rawget( data, baseInd + 1 )
-    local chipUsageStrLead, chipUsageStr = formatCPUs( rawget( data, baseInd + 2 ) )
+    local chipUsageStrLead, chipUsageStr, usageLeadColor, usageTrailColor = formatCPUs( rawget( data, baseInd + 2 ) )
 
     surface.SetTextPos( x, y )
     surface.SetTextColor( ownerColor )
@@ -167,9 +172,9 @@ local function drawChipRow( data, i, ownerColor, elemCount, x, xEnd, y )
     surface.SetTextPos( xEnd + INFO_OFFSET_CHIP, y )
     surface.SetTextColor( rawget( CHIP_COLORS, chipShorthand ) )
     surface.DrawText( chipShorthand .. " " )
-    surface.SetTextColor( COLOR_TEXT_FADED )
+    surface.SetTextColor( usageLeadColor )
     surface.DrawText( chipUsageStrLead )
-    surface.SetTextColor( COLOR_TEXT )
+    surface.SetTextColor( usageTrailColor )
     surface.DrawText( chipUsageStr )
     surface.SetTextColor( COLOR_MICROS )
     surface.DrawText( STR_MICROSECONDS )
