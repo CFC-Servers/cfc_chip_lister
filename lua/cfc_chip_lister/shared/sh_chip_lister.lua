@@ -1,7 +1,9 @@
 local function addChipListerModel( spawnName, name, model )
+    local modelNoExtension = string.StripExtension( model )
     list.Set( "SpawnableEntities", spawnName, {
         PrintName = name,
         ClassName = "cfc_chip_lister",
+        IconOverride = "spawnicons/" .. modelNoExtension .. ".png",
         Category = "Chip Lister",
         KeyValues = {
             model = model

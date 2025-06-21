@@ -10,3 +10,4 @@ ENT.Category        = "Chip Lister"
 
 ENT.Spawnable       = true
 ENT.Model           = "models/hunter/plates/plate16x16.mdl"
+ENT.IconOverride    = "spawnicons/models/hunter/plates/plate16x16.png"
