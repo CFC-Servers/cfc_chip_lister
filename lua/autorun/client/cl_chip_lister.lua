@@ -1,5 +1,7 @@
 include( "cfc_chip_lister/shared/sh_chip_lister.lua" )
 
+list.Set( "ContentCategoryIcons", "Chip Lister", "icon16/application_xp_terminal.png" )
+
 local TOGGLE_DIST = 1500
 local MAX_ELEMENTS = 30
 local SCREEN_SIZE = 1024
