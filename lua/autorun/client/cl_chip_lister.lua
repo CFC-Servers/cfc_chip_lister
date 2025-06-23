@@ -160,14 +160,13 @@ COLOR_MICROS = fadeColor( COLOR_TEXT, HSV_FADE_MICROS_ADJUST )
 
 
 -- Draws the Chip List data for a single chip
-local function drawChipRow( data, i, ownerColor, elemCount, x, xEnd, y )
-    local baseInd = i * 3 - 2
-    local chipShorthand = rawget( data, baseInd + 1 )
-    local chipUsageStrLead, chipUsageStr, usageLeadColor, usageTrailColor = formatCPUs( rawget( data, baseInd + 2 ) )
+local function drawChipRow( data, elemCount, ownerColor, x, xEnd, y )
+    local chipShorthand = data.IsE2 and "E2" or "SF"
+    local chipUsageStrLead, chipUsageStr, usageLeadColor, usageTrailColor = formatCPUs( data.CPUUsage )
 
     surface.SetTextPos( x, y )
     surface.SetTextColor( ownerColor )
-    surface.DrawText( rawget( data, baseInd ) ) -- chipName
+    surface.DrawText( data.Name ) -- chipName
 
     surface.SetTextPos( xEnd + INFO_OFFSET_CHIP, y )
     surface.SetTextColor( rawget( CHIP_COLORS, chipShorthand ) )
@@ -192,18 +191,17 @@ end
 
 -- Draws the Chip List data of a particular chip owner
 local function drawPlayersChipData( data, elemCount, x, xEnd, y )
-    local dataCount = rawget( data, "Count" )
-    local ownerUID = rawget( data, "OwnerUID" )
-    local ownerUsage = rawget( data, "OwnerUsage" )
+    local ownerIndex = data.OwnerIndex
+    local ownerUsage = data.OwnerTotalUsage
 
-    local owner = ownerUID == ID_WORLD and ID_WORLD or getPlayerByUID( ownerUID )
+    local owner = ownerIndex == ID_WORLD and ID_WORLD or Entity( ownerIndex )
     local ownerColor = getTeamColor( owner )
     local ownerColorFaded = fadeColor( ownerColor )
     local ownerUsageStrLead, ownerUsageStr = formatCPUs( ownerUsage )
 
     surface.SetTextPos( x, y )
     surface.SetTextColor( ownerColor )
-    surface.DrawText( rawget( data, "OwnerName" ) )
+    surface.DrawText( data.OwnerName or ownerUID )
 
     surface.SetTextPos( xEnd + INFO_OFFSET_OWNER, y )
     surface.DrawText( STR_TOTAL )
@@ -222,15 +220,15 @@ local function drawPlayersChipData( data, elemCount, x, xEnd, y )
         y = FONT_SIZE * 4
     end
 
-    for i = 1, dataCount / 3 do
-        elemCount, x, xEnd, y = drawChipRow( data, i, ownerColor, elemCount, x, xEnd, y )
+    for _, chipInfo in ipairs( data.ChipInfo ) do
+        elemCount, x, xEnd, y = drawChipRow( chipInfo, elemCount, ownerColor, x, xEnd, y )
     end
 
     return elemCount, x, xEnd, y -- These should persist between calls
 end
 
 -- Updates the Chip List material by drawing onto it once per update
-local function updateListDraw( globalUsage, perPlyData )
+local function updateListDraw( globalUsage, playerData )
     local elemCount = 0
     local x = 0
     local xEnd = SCREEN_SIZE_HALF
@@ -261,7 +259,7 @@ local function updateListDraw( globalUsage, perPlyData )
     surface.DrawText( STR_MICROSECONDS )
     y = y + FONT_SIZE
 
-    for _, data in ipairs( perPlyData ) do -- Draw the info of each owner and their chips
+    for _, data in ipairs( playerData ) do -- Draw the info of each owner and their chips
         elemCount, x, xEnd, y = drawPlayersChipData( data, elemCount, x, xEnd, y )
     end
 
@@ -342,14 +340,43 @@ hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply
     ply:ConCommand( "cfc_chiplister_enabled " .. ( listerEnabled and "0" or "1" ) )
 end )
 
-
-net.Receive( "CFC_ChipLister_UpdateListData", function()
+local maxplayers_bits = math.ceil( math.log( 1 + game.MaxPlayers() ) / math.log( 2 ) )
+net.Receive( "CFC_ChipLister_UpdateListData", function( len )
     if not listerEnabled then return end
 
-    local globalUsage = net.ReadUInt( 16 )
-    local compLength = net.ReadUInt( 16 )
-    local compressed = net.ReadData( compLength )
-    local perPlyData = utilJSONToTable( utilDecompress( compressed ) )
+    print( len )
 
-    updateListDraw( globalUsage, perPlyData )
+    local hasChips = net.ReadBool()
+    if not hasChips then
+        updateListDraw( 0, {} )
+        return
+    end
+
+    local globalUsage = net.ReadUInt( 16 )
+    local playerData = {}
+    local playerDataCount = net.ReadUInt( 5 )
+    for _ = 1, playerDataCount do
+        local data = {
+            Count = net.ReadUInt( 5 ),
+            OwnerName = net.ReadString(),
+            OwnerIndex = net.ReadUInt( maxplayers_bits ),
+            OwnerTotalUsage = net.ReadUInt( 15 ),
+            ChipInfo = {}
+        }
+
+        for _ = 1, data.Count do
+            local chip = {
+                Name = net.ReadString(),
+                IsE2 = net.ReadBool(),
+                CPUUsage = net.ReadInt( 15 ),
+            }
+            table.insert( data.ChipInfo, chip )
+        end
+
+        table.insert( playerData, data )
+    end
+
+    PrintTable( playerData ) -- Debugging line, can be removed later
+
+    updateListDraw( globalUsage, playerData )
 end )
