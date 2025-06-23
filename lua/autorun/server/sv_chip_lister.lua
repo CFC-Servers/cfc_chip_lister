@@ -250,9 +250,6 @@ local function updateListerData()
     for _, data in pairs( playerData ) do
         table.insert( sortedPlayerData, data )
     end
-    table.sort( sortedPlayerData, function( a, b )
-        return a.OwnerTotalUsage > b.OwnerTotalUsage
-    end )
 
     local hasChips = #chips > 0
     if not hasChips then
