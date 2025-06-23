@@ -361,7 +361,7 @@ net.Receive( "CFC_ChipLister_UpdateListData", function()
 
         for _ = 1, data.Count do
             local chip = {
-                Name = net.ReadString(),
+                Name = "-" .. net.ReadString(),
                 IsE2 = net.ReadBool(),
                 CPUUsage = net.ReadInt( 15 ),
             }
