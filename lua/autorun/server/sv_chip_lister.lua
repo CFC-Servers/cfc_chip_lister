@@ -217,10 +217,6 @@ local function updateListerData()
 
         globalUsage = globalUsage + chipNormalizedUsage
 
-        if lineCount >= MAX_TOTAL_ELEMENTS then
-            continue
-        end
-
         local plyData = playerData[owner]
         if not plyData then
             plyData = {
@@ -249,6 +245,38 @@ local function updateListerData()
     local sortedPlayerData = {}
     for _, data in pairs( playerData ) do
         table.insert( sortedPlayerData, data )
+    end
+    table.sort( sortedPlayerData, function( a, b )
+        return a.OwnerTotalUsage > b.OwnerTotalUsage
+    end )
+
+    -- If we're over the limit, remove chips from the end of the list until we're under the limit.
+    if lineCount >= MAX_TOTAL_ELEMENTS then
+        local excessLines = lineCount - MAX_TOTAL_ELEMENTS
+        local removedLines = 0
+
+        for _, data in ipairs( sortedPlayerData ) do
+            if data.Count > 0 then
+                local chipCount = #data.ChipInfo
+                if chipCount > 0 then
+                    local chipsToRemove = math.min( chipCount, excessLines - removedLines )
+                    for _ = 1, chipsToRemove do
+                        tableRemove( data.ChipInfo, #data.ChipInfo )
+                    end
+                    data.Count = data.Count - chipsToRemove
+                    removedLines = removedLines + chipsToRemove
+
+                    if data.Count == 0 then
+                        tableRemove( sortedPlayerData, i )
+                        removedLines = removedLines + 1
+                    end
+
+                    if removedLines >= excessLines then break end
+                end
+            end
+        end
+
+        lineCount = lineCount - removedLines
     end
 
     local hasChips = #chips > 0
