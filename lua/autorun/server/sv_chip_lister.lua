@@ -14,11 +14,15 @@ local CHIP_CLASSES = {
     starfall_processor = true,
 }
 
-local listUsers = {}
-local chips = {}
+CFC_ChipLister = CFC_ChipLister or {}
+CFC_ChipLister.ListUsers = CFC_ChipLister.ListUsers or {}
+CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount or 0
+CFC_ChipLister.Chips = CFC_ChipLister.Chips or {}
+
+local listUsers = CFC_ChipLister.ListUsers
+local chips = CFC_ChipLister.Chips
 local listUserRatelimits = {}
 local listUserRatelimitDesStates = {}
-local listUserCount = 0
 local convarFlags = { FCVAR_ARCHIVE, FCVAR_REPLICATED }
 local cornerCache = {}
 
@@ -127,7 +131,7 @@ end
 
 -- Get all list users who can see at least one chip lister.
 local function getVisibleListUsers()
-    if listUserCount == 0 then return {}, 0 end
+    if CFC_ChipLister.ListUserCount == 0 then return {}, 0 end
 
     local listers = ents.FindByClass( "cfc_chip_lister" )
 
@@ -264,14 +268,6 @@ local function updateListerData()
         return
     end
 
-    local bigStr = ""
-    for _, data in ipairs( sortedPlayerData ) do
-        bigStr = bigStr .. data.OwnerName
-        for _, chip in ipairs( data.ChipInfo ) do
-            bigStr = bigStr .. chip.Name
-        end
-    end
-
     net.Start( "CFC_ChipLister_UpdateListData" )
     net.WriteBool( true )
     net.WriteUInt( globalUsage, 16 )
@@ -294,14 +290,14 @@ end
 local function setListUserState( ply, state )
     if state then
         tableInsert( listUsers, ply )
-        listUserCount = listUserCount + 1
+        CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount + 1
         ply.cfcChipLister_usesLister = true
     else
         local ind = tableKeyFromValue( listUsers, ply )
 
         if ind then
             tableRemove( listUsers, ind )
-            listUserCount = listUserCount - 1
+            CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount - 1
             ply.cfcChipLister_usesLister = nil
         end
     end
@@ -333,7 +329,7 @@ hook.Add( "PlayerDisconnected", "CFC_ChipLister_UpdateListUserCount", function( 
 
     if ind then
         tableRemove( listUsers, ind )
-        listUserCount = listUserCount - 1
+        CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount - 1
         ply.cfcChipLister_usesLister = nil
     end
 end )
