@@ -246,12 +246,6 @@ local function updateListerData()
         lineCount = lineCount + 1
     end
 
-    for _, data in pairs( playerData ) do
-        table.sort( data.ChipInfo, function( a, b )
-            return a.CPUUsage > b.CPUUsage
-        end )
-    end
-
     local sortedPlayerData = {}
     for _, data in pairs( playerData ) do
         table.insert( sortedPlayerData, data )
