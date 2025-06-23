@@ -255,25 +255,24 @@ local function updateListerData()
         local excessLines = lineCount - MAX_TOTAL_ELEMENTS
         local removedLines = 0
 
-        for _, data in ipairs( sortedPlayerData ) do
-            if data.Count > 0 then
-                local chipCount = #data.ChipInfo
-                if chipCount > 0 then
-                    local chipsToRemove = math.min( chipCount, excessLines - removedLines )
-                    for _ = 1, chipsToRemove do
-                        tableRemove( data.ChipInfo, #data.ChipInfo )
-                    end
-                    data.Count = data.Count - chipsToRemove
-                    removedLines = removedLines + chipsToRemove
+        for i = #sortedPlayerData, 1, -1 do
+            local data = sortedPlayerData[i]
+            local chipInfo = data.ChipInfo
+            local chipsToRemove = math.min( #chipInfo, excessLines - removedLines )
 
-                    if data.Count == 0 then
-                        tableRemove( sortedPlayerData, i )
-                        removedLines = removedLines + 1
-                    end
-
-                    if removedLines >= excessLines then break end
-                end
+            for _ = 1, chipsToRemove do
+                chipInfo[#chipInfo] = nil
             end
+
+            data.Count = #chipInfo
+            removedLines = removedLines + chipsToRemove
+
+            if #chipInfo == 0 then
+                tableRemove( sortedPlayerData, i )
+                removedLines = removedLines + 1
+            end
+
+            if removedLines >= excessLines then break end
         end
 
         lineCount = lineCount - removedLines
