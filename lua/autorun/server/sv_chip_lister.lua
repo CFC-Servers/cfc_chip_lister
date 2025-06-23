@@ -4,31 +4,31 @@ include( "cfc_chip_lister/shared/sh_chip_lister.lua" )
 
 local CPU_MULT = 1000000
 local PLAYER_LENGTH_MAX = 20
-local CHIP_LENGTH_MAX = 25
+local CHIP_LENGTH_MAX = 24
 local MAX_TOTAL_ELEMENTS = 30 * 2
 local ID_WORLD = "[WORLD]"
 local TIMER_NAME = "CFC_ChipLister_UpdateListData"
 local TOGGLE_HUD_COMMAND = "!chiplister"
-local CHIP_SHORTHANDS = { -- Must all be unique two-character strings
-    gmod_wire_expression2 = "E2",
-    starfall_processor = "SF",
+local CHIP_CLASSES = {
+    gmod_wire_expression2 = true,
+    starfall_processor = true,
 }
 
-local listUsers = {}
-local chips = {}
+CFC_ChipLister = CFC_ChipLister or {}
+CFC_ChipLister.ListUsers = CFC_ChipLister.ListUsers or {}
+CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount or 0
+CFC_ChipLister.Chips = CFC_ChipLister.Chips or {}
+
+local listUsers = CFC_ChipLister.ListUsers
+local chips = CFC_ChipLister.Chips
 local listUserRatelimits = {}
 local listUserRatelimitDesStates = {}
-local listUserCount = 0
-local chipCount = 0
 local convarFlags = { FCVAR_ARCHIVE, FCVAR_REPLICATED }
 local cornerCache = {}
 
 local IsValid = IsValid
 local rawset = rawset
-local rawget = rawget
 local mRound = math.Round
-local utilTableToJSON = util.TableToJSON
-local utilCompress = util.Compress
 local tableInsert = table.insert
 local tableRemove = table.remove
 local tableKeyFromValue = table.KeyFromValue
@@ -40,7 +40,6 @@ local stringTrim = string.Trim
 local getClass
 local getOwner
 local getNick
-local getUserID
 
 do
     local entityMeta = FindMetaTable( "Entity" )
@@ -59,7 +58,6 @@ do
     local playerMeta = FindMetaTable( "Player" )
 
     getNick = playerMeta.Nick
-    getUserID = playerMeta.UserID
 end
 
 local LISTER_INTERVAL = CreateConVar( "cfc_chiplister_interval", 1, convarFlags, "How often (in seconds) the chip lister will update and send info to players.", 0.05, 10 )
@@ -133,7 +131,7 @@ end
 
 -- Get all list users who can see at least one chip lister.
 local function getVisibleListUsers()
-    if listUserCount == 0 then return {}, 0 end
+    if CFC_ChipLister.ListUserCount == 0 then return {}, 0 end
 
     local listers = ents.FindByClass( "cfc_chip_lister" )
 
@@ -159,7 +157,7 @@ local function getChipName( ent )
     return ent.GetGateName and ent:GetGateName() or "[UNKNOWN]"
 end
 
-local function getCPUs( ent, class )
+local function getCPUs( ent )
     if ent.Starfall then
         local instance = ent.instance
         if not instance then return false end
@@ -168,7 +166,7 @@ local function getCPUs( ent, class )
         return instance:movingCPUAverage()
     end
 
-    if ( class or getClass( ent ) ) == "gmod_wire_expression2" then
+    if getClass( ent ) == "gmod_wire_expression2" then
         if ent.error then return false end
 
         local context = ent.context
@@ -202,116 +200,122 @@ local function prepareChipName( str )
     return prepareName( str, CHIP_LENGTH_MAX )
 end
 
-local function chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, elemCount )
-    if not IsValid( chip ) then return globalUsage, idCount, elemCount end
-
-    local chipName = prepareChipName( " -" .. getChipName( chip ) )
-    local chipClass = getClass( chip )
-    local chipUsage = getCPUs( chip, chipClass )
-    local errored = chipUsage == false
-    chipUsage = normalizeCPUs( chipUsage or 0 )
-
-    local owner = getOwner( chip )
-    local ownerName
-
-    globalUsage = globalUsage + chipUsage
-    elemCount = elemCount + 1
-
-    -- For some reason, :IsPlayer() always returns false if obtained locally from entityMeta, it HAS to be called this way
-    if IsValid( owner ) and owner:IsPlayer() then
-        ownerName = preparePlyName( getNick( owner ) )
-    else
-        owner = ID_WORLD
-        ownerName = ID_WORLD
-    end
-
-    local id = rawget( idLookup, owner )
-
-    if not id then
-        if elemCount > MAX_TOTAL_ELEMENTS then return globalUsage, idCount, elemCount end
-
-        idCount = idCount + 1
-        id = idCount
-        elemCount = elemCount + 1
-        rawset( idLookup, owner, id )
-    end
-
-    local data = rawget( perPlyData, id )
-    local dataCount
-
-    if elemCount > MAX_TOTAL_ELEMENTS then
-        if data then
-            rawset( data, "OwnerUsage", rawget( data, "OwnerUsage" ) + chipUsage )
-        end
-
-        return globalUsage, idCount, elemCount
-    end
-
-    if data then
-        dataCount = rawget( data, "Count" )
-        rawset( data, "OwnerUsage", rawget( data, "OwnerUsage" ) + chipUsage )
-    else
-        data = {
-            Count = 0,
-            OwnerUID = owner == ID_WORLD and ID_WORLD or getUserID( owner ),
-            OwnerName = ownerName,
-            OwnerUsage = chipUsage,
-        }
-
-        rawset( perPlyData, id, data )
-        dataCount = 0
-    end
-
-    dataCount = dataCount + 1
-    rawset( data, dataCount, chipName )
-    dataCount = dataCount + 1
-    rawset( data, dataCount, CHIP_SHORTHANDS[chipClass] )
-    dataCount = dataCount + 1
-    rawset( data, dataCount, errored and -1 or chipUsage )
-
-    rawset( data, "Count", dataCount )
-
-    return globalUsage, idCount, elemCount
-end
-
+local maxplayers_bits = math.ceil( math.log( 1 + game.MaxPlayers() ) / math.log( 2 ) )
 local function updateListerData()
     local visibleUsers, visibleUserCount = getVisibleListUsers()
     if visibleUserCount == 0 then return end
 
-    local perPlyData = {}
-    local idLookup = {}
+    local playerData = {}
     local globalUsage = 0
-    local idCount = 0
-    local elemCount = 0
+    local lineCount = 0
 
-    for i = 1, chipCount do
-        local chip = rawget( chips, i )
+    for _, chip in ipairs( chips ) do
+        local isE2 = getClass( chip ) == "gmod_wire_expression2"
+        local chipUsage = getCPUs( chip )
+        local chipNormalizedUsage = normalizeCPUs( chipUsage or 0 )
+        local owner = getOwner( chip )
 
-        globalUsage, idCount, elemCount = chipLoopStep( chip, perPlyData, idLookup, globalUsage, idCount, elemCount )
+        globalUsage = globalUsage + chipNormalizedUsage
+
+        local plyData = playerData[owner]
+        if not plyData then
+            plyData = {
+                Count = 0,
+                OwnerIndex = owner == ID_WORLD and 0 or owner:EntIndex(),
+                OwnerName = owner == ID_WORLD and ID_WORLD or preparePlyName( getNick( owner ) ),
+                OwnerTotalUsage = 0,
+                ChipInfo = {},
+            }
+            playerData[owner] = plyData
+            lineCount = lineCount + 1
+        end
+
+        table.insert( plyData.ChipInfo, {
+            Name = prepareChipName( getChipName( chip ) ),
+            IsE2 = isE2,
+            CPUUsage = chipUsage == false and -1 or chipNormalizedUsage,
+        } )
+        plyData.Count = plyData.Count + 1
+        if chipUsage ~= false then
+            plyData.OwnerTotalUsage = plyData.OwnerTotalUsage + chipNormalizedUsage
+        end
+        lineCount = lineCount + 1
     end
 
-    local json = utilTableToJSON( perPlyData )
-    local compressed = utilCompress( json )
-    local compLength = #compressed
+    local sortedPlayerData = {}
+    for _, data in pairs( playerData ) do
+        table.insert( sortedPlayerData, data )
+    end
+    table.sort( sortedPlayerData, function( a, b )
+        return a.OwnerTotalUsage > b.OwnerTotalUsage
+    end )
+
+    -- If we're over the limit, remove chips from the end of the list until we're under the limit.
+    if lineCount >= MAX_TOTAL_ELEMENTS then
+        local excessLines = lineCount - MAX_TOTAL_ELEMENTS
+        local removedLines = 0
+
+        for i = #sortedPlayerData, 1, -1 do
+            local data = sortedPlayerData[i]
+            local chipInfo = data.ChipInfo
+            local chipsToRemove = math.min( #chipInfo, excessLines - removedLines )
+
+            for _ = 1, chipsToRemove do
+                chipInfo[#chipInfo] = nil
+            end
+
+            data.Count = #chipInfo
+            removedLines = removedLines + chipsToRemove
+
+            if #chipInfo == 0 then
+                tableRemove( sortedPlayerData, i )
+                removedLines = removedLines + 1
+            end
+
+            if removedLines >= excessLines then break end
+        end
+
+        lineCount = lineCount - removedLines
+    end
+
+    local hasChips = #chips > 0
+    if not hasChips then
+        net.Start( "CFC_ChipLister_UpdateListData" )
+        net.WriteBool( false )
+        net.Send( visibleUsers )
+        return
+    end
 
     net.Start( "CFC_ChipLister_UpdateListData" )
+    net.WriteBool( true )
     net.WriteUInt( globalUsage, 16 )
-    net.WriteUInt( compLength, 16 )
-    net.WriteData( compressed, compLength )
+    net.WriteUInt( #sortedPlayerData, 5 )
+    for _, data in ipairs( sortedPlayerData ) do
+        net.WriteUInt( data.Count, 6 )
+        net.WriteString( data.OwnerName )
+        net.WriteUInt( data.OwnerIndex, maxplayers_bits )
+        net.WriteUInt( data.OwnerTotalUsage, 15 )
+
+        for _, chip in ipairs( data.ChipInfo ) do
+            net.WriteString( chip.Name )
+            net.WriteBool( chip.IsE2 )
+            net.WriteInt( chip.CPUUsage, 15 )
+        end
+    end
     net.Send( visibleUsers )
 end
 
 local function setListUserState( ply, state )
     if state then
         tableInsert( listUsers, ply )
-        listUserCount = listUserCount + 1
+        CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount + 1
         ply.cfcChipLister_usesLister = true
     else
         local ind = tableKeyFromValue( listUsers, ply )
 
         if ind then
             tableRemove( listUsers, ind )
-            listUserCount = listUserCount - 1
+            CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount - 1
             ply.cfcChipLister_usesLister = nil
         end
     end
@@ -323,24 +327,16 @@ end )
 
 
 hook.Add( "OnEntityCreated", "CFC_ChipLister_ChipCreated", function( ent )
-    if not IsValid( ent ) then return end
-
     local class = getClass( ent )
+    if not CHIP_CLASSES[class] then return end
 
-    if not CHIP_SHORTHANDS[class] then return end
-
-    chipCount = chipCount + 1
-    chips[chipCount] = ent
+    table.insert( chips, ent )
 end )
 
-hook.Add( "OnEntityRemoved", "CFC_ChipLister_ChipRemoved", function( ent )
-    if not IsValid( ent ) then return end
-
+hook.Add( "EntityRemoved", "CFC_ChipLister_ChipRemoved", function( ent )
     local class = getClass( ent )
+    if not CHIP_CLASSES[class] then return end
 
-    if not CHIP_SHORTHANDS[class] then return end
-
-    chipCount = chipCount - 1
     tableRemoveByValue( chips, ent )
 end )
 
@@ -351,7 +347,7 @@ hook.Add( "PlayerDisconnected", "CFC_ChipLister_UpdateListUserCount", function( 
 
     if ind then
         tableRemove( listUsers, ind )
-        listUserCount = listUserCount - 1
+        CFC_ChipLister.ListUserCount = CFC_ChipLister.ListUserCount - 1
         ply.cfcChipLister_usesLister = nil
     end
 end )
