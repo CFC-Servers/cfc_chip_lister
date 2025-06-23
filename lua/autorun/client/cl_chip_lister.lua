@@ -44,12 +44,9 @@ local COLOR_TEXT_FADED
 local COLOR_MICROS
 
 local IsValid = IsValid
-local getPlayerByUID = Player
 local rawget = rawget
 local colorToHSV = ColorToHSV
 local hsvToColor = HSVToColor
-local utilJSONToTable = util.JSONToTable
-local utilDecompress = util.Decompress
 local stringLen = string.len
 local stringSub = string.sub
 local stringFormat = string.format
@@ -355,7 +352,7 @@ net.Receive( "CFC_ChipLister_UpdateListData", function()
     local playerDataCount = net.ReadUInt( 5 )
     for _ = 1, playerDataCount do
         local data = {
-            Count = net.ReadUInt( 5 ),
+            Count = net.ReadUInt( 6 ),
             OwnerName = net.ReadString(),
             OwnerIndex = net.ReadUInt( maxplayers_bits ),
             OwnerTotalUsage = net.ReadUInt( 15 ),

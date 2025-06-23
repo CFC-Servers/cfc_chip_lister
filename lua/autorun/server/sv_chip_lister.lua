@@ -24,7 +24,6 @@ local cornerCache = {}
 
 local IsValid = IsValid
 local rawset = rawset
-local rawget = rawget
 local mRound = math.Round
 local tableInsert = table.insert
 local tableRemove = table.remove
@@ -204,6 +203,7 @@ local function updateListerData()
 
     local playerData = {}
     local globalUsage = 0
+    local writtenChipCount = 0
 
     for _, chip in ipairs( chips ) do
         local isE2 = getClass( chip ) == "gmod_wire_expression2"
@@ -212,6 +212,10 @@ local function updateListerData()
         local owner = getOwner( chip )
 
         globalUsage = globalUsage + chipNormalizedUsage
+
+        if writtenChipCount >= MAX_TOTAL_ELEMENTS then
+            break
+        end
 
         local plyData = playerData[owner]
         if not plyData then
@@ -234,6 +238,7 @@ local function updateListerData()
         if chipUsage ~= false then
             plyData.OwnerTotalUsage = plyData.OwnerTotalUsage + chipNormalizedUsage
         end
+        writtenChipCount = writtenChipCount + 1
     end
 
     for _, data in pairs( playerData ) do
@@ -271,7 +276,7 @@ local function updateListerData()
     net.WriteUInt( globalUsage, 16 )
     net.WriteUInt( #sortedPlayerData, 5 )
     for _, data in ipairs( sortedPlayerData ) do
-        net.WriteUInt( data.Count, 5 )
+        net.WriteUInt( data.Count, 6 )
         net.WriteString( data.OwnerName )
         net.WriteUInt( data.OwnerIndex, maxplayers_bits )
         net.WriteUInt( data.OwnerTotalUsage, 15 )
