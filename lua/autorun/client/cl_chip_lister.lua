@@ -341,10 +341,8 @@ hook.Add( "KeyPress", "CFC_ChipLister_ToggleScreen", function( ply, key ) -- ply
 end )
 
 local maxplayers_bits = math.ceil( math.log( 1 + game.MaxPlayers() ) / math.log( 2 ) )
-net.Receive( "CFC_ChipLister_UpdateListData", function( len )
+net.Receive( "CFC_ChipLister_UpdateListData", function()
     if not listerEnabled then return end
-
-    print( len )
 
     local hasChips = net.ReadBool()
     if not hasChips then
@@ -375,8 +373,6 @@ net.Receive( "CFC_ChipLister_UpdateListData", function( len )
 
         table.insert( playerData, data )
     end
-
-    PrintTable( playerData ) -- Debugging line, can be removed later
 
     updateListDraw( globalUsage, playerData )
 end )
