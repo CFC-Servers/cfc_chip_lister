@@ -4,7 +4,7 @@ include( "cfc_chip_lister/shared/sh_chip_lister.lua" )
 
 local CPU_MULT = 1000000
 local PLAYER_LENGTH_MAX = 20
-local CHIP_LENGTH_MAX = 25
+local CHIP_LENGTH_MAX = 24
 local MAX_TOTAL_ELEMENTS = 30 * 2
 local ID_WORLD = "[WORLD]"
 local TIMER_NAME = "CFC_ChipLister_UpdateListData"
