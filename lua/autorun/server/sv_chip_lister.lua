@@ -203,7 +203,7 @@ local function updateListerData()
 
     local playerData = {}
     local globalUsage = 0
-    local writtenChipCount = 0
+    local lineCount = 0
 
     for _, chip in ipairs( chips ) do
         local isE2 = getClass( chip ) == "gmod_wire_expression2"
@@ -213,8 +213,8 @@ local function updateListerData()
 
         globalUsage = globalUsage + chipNormalizedUsage
 
-        if writtenChipCount >= MAX_TOTAL_ELEMENTS then
-            break
+        if lineCount >= MAX_TOTAL_ELEMENTS then
+            continue
         end
 
         local plyData = playerData[owner]
@@ -227,6 +227,7 @@ local function updateListerData()
                 ChipInfo = {},
             }
             playerData[owner] = plyData
+            lineCount = lineCount + 1
         end
 
         table.insert( plyData.ChipInfo, {
@@ -238,7 +239,7 @@ local function updateListerData()
         if chipUsage ~= false then
             plyData.OwnerTotalUsage = plyData.OwnerTotalUsage + chipNormalizedUsage
         end
-        writtenChipCount = writtenChipCount + 1
+        lineCount = lineCount + 1
     end
 
     for _, data in pairs( playerData ) do
