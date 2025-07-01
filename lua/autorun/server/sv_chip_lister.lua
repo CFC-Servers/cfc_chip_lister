@@ -210,6 +210,8 @@ local function updateListerData()
     local lineCount = 0
 
     for _, chip in ipairs( chips ) do
+        if not chip:IsValid() then continue end
+
         local isE2 = getClass( chip ) == "gmod_wire_expression2"
         local chipUsage = getCPUs( chip )
         local chipNormalizedUsage = normalizeCPUs( chipUsage or 0 )
