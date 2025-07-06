@@ -30,7 +30,7 @@ local CHIP_COLORS = {
 local HSV_FADE_ADJUST = Vector( 0, 1, 0.35 )
 local HSV_FADE_MICROS_ADJUST = Vector( 0, 1, 0.75 )
 
-local ID_WORLD = "[WORLD]"
+local ID_WORLD = 0
 local CPUS_FORMAT = "%05d"
 local CPUS_FORMAT_ERR_LEAD = "err "
 local CPUS_FORMAT_ERR_TRAIL = "0"

@@ -6,7 +6,8 @@ local CPU_MULT = 1000000
 local PLAYER_LENGTH_MAX = 20
 local CHIP_LENGTH_MAX = 24
 local MAX_TOTAL_ELEMENTS = 30 * 2
-local ID_WORLD = "[WORLD]"
+local ID_WORLD = 0
+local NAME_WORLD = "[WORLD]"
 local TIMER_NAME = "CFC_ChipLister_UpdateListData"
 local TOGGLE_HUD_COMMAND = "!chiplister"
 local CHIP_CLASSES = {
@@ -217,14 +218,18 @@ local function updateListerData()
         local chipNormalizedUsage = normalizeCPUs( chipUsage or 0 )
         local owner = getOwner( chip )
 
+        if not IsValid( owner ) then
+            owner = ID_WORLD
+        end
+
         globalUsage = globalUsage + chipNormalizedUsage
 
         local plyData = playerData[owner]
         if not plyData then
             plyData = {
                 Count = 0,
-                OwnerIndex = owner == ID_WORLD and 0 or owner:EntIndex(),
-                OwnerName = owner == ID_WORLD and ID_WORLD or preparePlyName( getNick( owner ) ),
+                OwnerIndex = owner == ID_WORLD and ID_WORLD or owner:EntIndex(),
+                OwnerName = owner == ID_WORLD and NAME_WORLD or preparePlyName( getNick( owner ) ),
                 OwnerTotalUsage = 0,
                 ChipInfo = {},
             }
