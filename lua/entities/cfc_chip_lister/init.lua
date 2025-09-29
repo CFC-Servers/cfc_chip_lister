@@ -3,7 +3,7 @@ AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
 
-local ErrorModel = "models/error.mdl"
+local MODEL_ERROR = "models/error.mdl"
 
 local makeChipLister
 
@@ -19,7 +19,7 @@ end
 function ENT:Initialize()
     self.BaseClass.Initialize( self )
 
-    if self:GetModel() == ErrorModel then
+    if self:GetModel() == MODEL_ERROR then
         self:SetModel( self.Model )
     end
 
