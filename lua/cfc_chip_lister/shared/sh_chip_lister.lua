@@ -1,3 +1,9 @@
+CreateConVar( "sbox_maxcfc_chip_lister", 20, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "The max number of chip listers per player.", 0, 1000 )
+
+if cleanup then
+    cleanup.Register( "cfc_chip_lister" )
+end
+
 local function addChipListerModel( spawnName, name, model )
     local modelNoExtension = string.StripExtension( model )
     list.Set( "SpawnableEntities", spawnName, {

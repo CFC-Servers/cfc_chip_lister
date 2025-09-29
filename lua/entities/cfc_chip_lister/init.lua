@@ -5,6 +5,11 @@ include( "shared.lua" )
 
 local ErrorModel = "models/error.mdl"
 
+local makeChipLister
+
+
+----- ENT FUNCTIONS -----
+
 function ENT:KeyValue( key, value )
     if key == "model" then
         self.Model = value
@@ -32,3 +37,32 @@ end
 function ENT:UpdateTransmitState()
     return TRANSMIT_ALWAYS
 end
+
+
+----- PRIVATE FUNCTIONS -----
+
+makeChipLister = function( ply, data )
+    local validPly = IsValid( ply )
+    if validPly and not ply:CheckLimit( "cfc_chip_lister" ) then return end
+
+    local ent = ents.Create( "cfc_chip_lister" )
+    if not ent:IsValid() then return end
+
+    duplicator.DoGeneric( ent, data )
+    ent:Spawn()
+    ent:Activate()
+
+    duplicator.DoGenericPhysics( ent, ply, data )
+
+    if validPly then
+        ply:AddCount( "cfc_chip_lister", ent )
+        ply:AddCleanup( "cfc_chip_lister", ent )
+    end
+
+    return ent
+end
+
+
+----- SETUP -----
+
+duplicator.RegisterEntityClass( "cfc_chip_lister", makeChipLister, "Data" )
