@@ -38,6 +38,20 @@ function ENT:UpdateTransmitState()
     return TRANSMIT_ALWAYS
 end
 
+function ENT:SpawnFunction( ply, tr )
+    if not tr.Hit then return end
+
+    local normal = tr.HitNormal
+    local pos = tr.HitPos + normal * 1.5
+
+    local ent = makeChipLister( ply, {
+        Pos = pos,
+        Angle = normal:Angle(),
+    } )
+
+    return ent
+end
+
 
 ----- PRIVATE FUNCTIONS -----
 
