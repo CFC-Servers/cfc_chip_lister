@@ -8,12 +8,6 @@ local MODEL_ERROR = "models/error.mdl"
 local makeChiplister
 
 
-function ENT:KeyValue( key, value )
-    if key == "model" then
-        self.Model = value
-    end
-end
-
 function ENT:Initialize()
     self.BaseClass.Initialize( self )
 
@@ -41,6 +35,7 @@ function ENT:SpawnFunction( ply, tr )
     local ent = makeChiplister( ply, {
         Pos = pos,
         Angle = normal:Angle(),
+        Model = self.Model,
     } )
 
     return ent
