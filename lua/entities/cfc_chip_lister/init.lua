@@ -3,18 +3,15 @@ AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
 
-local ErrorModel = "models/error.mdl"
+local MODEL_ERROR = "models/error.mdl"
 
-function ENT:KeyValue( key, value )
-    if key == "model" then
-        self.Model = value
-    end
-end
+local makeChiplister
+
 
 function ENT:Initialize()
     self.BaseClass.Initialize( self )
 
-    if self:GetModel() == ErrorModel then
+    if self:GetModel() == MODEL_ERROR then
         self:SetModel( self.Model )
     end
 
@@ -29,6 +26,56 @@ function ENT:Initialize()
     self:SetColor( Color( 36, 36, 36, 255 ) )
 end
 
+function ENT:SpawnFunction( ply, tr )
+    if not tr.Hit then return end
+
+    local normal = tr.HitNormal
+    local pos = tr.HitPos + normal * 1.5
+    local ang = normal:Angle()
+    ang:RotateAroundAxis( ang:Right(), -90 )
+
+    local ent = makeChiplister( ply, {
+        Pos = pos,
+        Angle = ang,
+        Model = self.Model,
+    } )
+
+    -- Spawn frozen by default from the spawnmenu.
+    if IsValid( ent ) then
+        local phys = ent:GetPhysicsObject()
+        if IsValid( phys ) then
+            phys:EnableMotion( false )
+        end
+    end
+
+    return ent
+end
+
 function ENT:UpdateTransmitState()
     return TRANSMIT_ALWAYS
 end
+
+
+makeChiplister = function( ply, data )
+    local validPly = IsValid( ply )
+    if validPly and not ply:CheckLimit( "cfc_chip_lister" ) then return end
+
+    local ent = ents.Create( "cfc_chip_lister" )
+    if not ent:IsValid() then return end
+
+    duplicator.DoGeneric( ent, data )
+    ent:Spawn()
+    ent:Activate()
+
+    duplicator.DoGenericPhysics( ent, ply, data )
+
+    if validPly then
+        ply:AddCount( "cfc_chip_lister", ent )
+        ply:AddCleanup( "cfc_chip_lister", ent )
+    end
+
+    return ent
+end
+
+
+duplicator.RegisterEntityClass( "cfc_chip_lister", makeChiplister, "Data" )
