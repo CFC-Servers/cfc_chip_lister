@@ -40,6 +40,14 @@ function ENT:SpawnFunction( ply, tr )
         Model = self.Model,
     } )
 
+    -- Spawn frozen by default from the spawnmenu.
+    if IsValid( ent ) then
+        local phys = ent:GetPhysicsObject()
+        if IsValid( phys ) then
+            phys:EnableMotion( false )
+        end
+    end
+
     return ent
 end
 
