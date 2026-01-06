@@ -31,10 +31,12 @@ function ENT:SpawnFunction( ply, tr )
 
     local normal = tr.HitNormal
     local pos = tr.HitPos + normal * 1.5
+    local ang = normal:Angle()
+    ang:RotateAroundAxis( ang:Right(), -90 )
 
     local ent = makeChiplister( ply, {
         Pos = pos,
-        Angle = normal:Angle(),
+        Angle = ang,
         Model = self.Model,
     } )
 
