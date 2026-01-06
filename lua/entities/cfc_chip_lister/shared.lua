@@ -13,4 +13,4 @@ ENT.Model           = "models/hunter/plates/plate16x16.mdl"
 ENT.IconOverride    = "spawnicons/models/hunter/plates/plate16x16.png"
 
 
-CreateConVar( "sbox_maxcfc_chip_lister", 16, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "The max number of cfc chip listers per player.", 0, 1000 )
+CreateConVar( "sbox_maxcfc_chip_lister", 4, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "The max number of cfc chip listers per player.", 0, 1000 )
