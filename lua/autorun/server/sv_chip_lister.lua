@@ -163,8 +163,9 @@ local function getCPUs( ent )
         local instance = ent.instance
         if not instance then return false end
         if instance.error then return false end
+        if not instance.perf then return false end
 
-        return instance:movingCPUAverage()
+        return instance.perf:getAverageCpu()
     end
 
     if getClass( ent ) == "gmod_wire_expression2" then
