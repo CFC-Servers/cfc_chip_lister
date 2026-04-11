@@ -8,6 +8,8 @@ local PANEL_POS_X = CreateClientConVar( "cfc_chiplister_hud_pos_x", 50, true, fa
 local PANEL_POS_Y = CreateClientConVar( "cfc_chiplister_hud_pos_y", 25, true, false, "Y-Position of the chiplister HUD element." )
 local PANEL_SIZE = CreateClientConVar( "cfc_chiplister_hud_size", 275, true, false, "Size of the chiplister HUD element." )
 
+local LISTER_ENABLED = GetConVar( "cfc_chiplister_enabled" )
+
 
 local function openListerPanel()
     if IsValid( listerPanel ) then
@@ -28,6 +30,20 @@ local function openListerPanel()
     imagePanel:SetPos( 10, 35 )
     imagePanel:Dock( FILL )
     imagePanel:SetImage( "!cfc_chiplister_screen" )
+
+    local _imagePaint = imagePanel.Paint
+    function imagePanel:Paint( w, h )
+        if LISTER_ENABLED:GetBool() then
+            _imagePaint( self, w, h )
+            return
+        end
+
+        -- If lister is disabled, draw a custom message mentioning it.
+        -- Otherwise, the "Press E to toggle" text will show up from the RT, which only applies to placed listers.
+        surface.SetDrawColor( 0, 0, 0, 255 )
+        surface.DrawRect( 0, 0, w, h )
+        draw.SimpleText( "Chip Lister not enabled!", "CloseCaption_Bold", w / 2, h / 2, nil, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+    end
 
 
     function listerPanel:OnClose()
