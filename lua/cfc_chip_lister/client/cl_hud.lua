@@ -58,7 +58,7 @@ local function closeListerPanel()
 end
 
 local function toggleListerPanel()
-    if PANEL_PERSIST:GetBool() then
+    if IsValid( listerPanel ) and listerPanel:IsVisible() then
         closeListerPanel()
     else
         openListerPanel()
