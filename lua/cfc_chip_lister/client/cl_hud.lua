@@ -1,4 +1,5 @@
 local listerPanel
+local ignoringPosConvars = false
 
 local PANEL_MIN_SIZE = 200
 
@@ -34,10 +35,16 @@ local function openListerPanel()
     end
 
     local _SetPos = listerPanel.SetPos
-    function listerPanel:SetPos( x, y )
+    function listerPanel:SetPos( x, y, noConvar )
         _SetPos( self, x, y )
-        LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_x " .. x )
-        LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_y " .. y )
+
+        if not noConvar then
+            local oldState = ignoringPosConvars
+            ignoringPosConvars = true
+            LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_x " .. x )
+            LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_y " .. y )
+            ignoringPosConvars = oldState
+        end
     end
 
     local _SetSize = listerPanel.SetSize
@@ -65,6 +72,15 @@ local function toggleListerPanel()
     end
 end
 
+local function setPosFromConvar( x, y )
+    if ignoringPosConvars then return end
+    if not IsValid( listerPanel ) then return end
+
+    x = x or PANEL_POS_X:GetInt()
+    y = y or PANEL_POS_Y:GetInt()
+    listerPanel:SetPos( x, y, true )
+end
+
 
 CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
     ["$basetexture"] = "cfc_chiplister_rt",
@@ -75,6 +91,15 @@ concommand.Add( "cfc_chiplister_open_hud", openListerPanel, nil, "Opens the Chip
 concommand.Add( "cfc_chiplister_close_hud", closeListerPanel, nil, "Closes the Chip Lister HUD element." )
 concommand.Add( "cfc_chiplister_toggle_hud", toggleListerPanel, nil, "Toggles the Chip Lister HUD element." )
 net.Receive( "CFC_ChipLister_ToggleHUD", toggleListerPanel )
+
+
+cvars.AddChangeCallback( "cfc_chiplister_hud_pos_x", function( _, _, new )
+    setPosFromConvar( tonumber( new ), nil )
+end, "CFC_ShipLister_MoveHUD" )
+
+cvars.AddChangeCallback( "cfc_chiplister_hud_pos_y", function( _, _, new )
+    setPosFromConvar( nil, tonumber( new ) )
+end, "CFC_ShipLister_MoveHUD" )
 
 
 hook.Add( "AddToolMenuCategories", "CFC_ChipLister_AddToolMenuCategories", function()
