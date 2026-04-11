@@ -41,8 +41,8 @@ local function openListerPanel()
         if not noConvar then
             local oldState = ignoringPosConvars
             ignoringPosConvars = true
-            LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_x " .. x )
-            LocalPlayer():ConCommand( "cfc_chiplister_hud_pos_y " .. y )
+            PANEL_POS_X:SetInt( x )
+            PANEL_POS_Y:SetInt( y )
             ignoringPosConvars = oldState
         end
     end
