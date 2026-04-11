@@ -85,6 +85,13 @@ hook.Add( "PopulateToolMenu", "CFC_ChipLister_PopulateToolMenu", function()
     spawnmenu.AddToolMenuOption( "Options", "CFC", "cfc_chiplister", "#Chip Lister", "", "", function( panel )
         panel:CheckBox( "Enable E2/SF Lister", "cfc_chiplister_enabled" )
         panel:Button( "Toggle Chip Lister on HUD", "cfc_chiplister_toggle_hud" )
+
+        local btnReset = panel:Button( "Reset HUD Position" )
+
+        function btnReset:DoClick()
+            PANEL_POS_X:Revert()
+            PANEL_POS_Y:Revert()
+        end
     end )
 end )
 
