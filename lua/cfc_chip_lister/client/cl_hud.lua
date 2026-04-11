@@ -1,5 +1,6 @@
 local listerPanel
 local ignoringPosConvars = false
+local ignoringSizeConvar = false
 
 local PANEL_DEFAULT_POS_FRAC_X = 50 / 1920
 local PANEL_DEFAULT_POS_FRAC_Y = 25 / 1080
@@ -94,11 +95,17 @@ local function openListerPanel()
     end
 
     local _SetSize = listerPanel.SetSize
-    function listerPanel:SetSize( w, h )
+    function listerPanel:SetSize( w, h, noConvar )
         local size = clampSize( math.min( w, h ) ) -- Keep it as a square
 
         _SetSize( self, size, size )
-        PANEL_SIZE_FRAC:SetFloat( size / ScrH() )
+
+        if not noConvar then
+            local oldState = ignoringSizeConvar
+            ignoringSizeConvar = true
+            PANEL_SIZE_FRAC:SetFloat( size / ScrH() )
+            ignoringSizeConvar = oldState
+        end
     end
 
     LocalPlayer():ConCommand( "cfc_chiplister_hud_persist 1" )
@@ -146,6 +153,14 @@ cvars.AddChangeCallback( "cfc_chiplister_hud_pos_frac_y", function( _, _, new )
     setPosFromConvar( nil, tonumber( new ) )
 end, "CFC_ShipLister_MoveHUD" )
 
+cvars.AddChangeCallback( "cfc_chiplister_hud_size_frac", function( _, _, new )
+    if ignoringSizeConvar then return end
+    if not IsValid( listerPanel ) then return end
+
+    local size = getSizeFromConvar( tonumber( new ) )
+    listerPanel:SetSize( size, size, true )
+end, "CFC_ShipLister_ResizeHUD" )
+
 
 hook.Add( "AddToolMenuCategories", "CFC_ChipLister_AddToolMenuCategories", function()
     spawnmenu.AddToolCategory( "Options", "CFC", "#CFC" )
@@ -156,11 +171,17 @@ hook.Add( "PopulateToolMenu", "CFC_ChipLister_PopulateToolMenu", function()
         panel:CheckBox( "Enable E2/SF Lister", "cfc_chiplister_enabled" )
         panel:Button( "Toggle Chip Lister on HUD", "cfc_chiplister_toggle_hud" )
 
-        local btnReset = panel:Button( "Reset HUD Position" )
+        local btnResetPos = panel:Button( "Reset HUD Position" )
 
-        function btnReset:DoClick()
+        function btnResetPos:DoClick()
             PANEL_POS_FRAC_X:Revert()
             PANEL_POS_FRAC_Y:Revert()
+        end
+
+        local btnResetSize = panel:Button( "Reset HUD Size" )
+
+        function btnResetSize:DoClick()
+            PANEL_SIZE_FRAC:Revert()
         end
     end )
 end )
