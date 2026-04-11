@@ -73,6 +73,7 @@ CreateMaterial( "cfc_chiplister_screen", "UnlitGeneric", {
 
 concommand.Add( "cfc_chiplister_open_hud", openListerPanel, nil, "Opens the Chip Lister as a HUD element." )
 concommand.Add( "cfc_chiplister_close_hud", closeListerPanel, nil, "Closes the Chip Lister HUD element." )
+concommand.Add( "cfc_chiplister_toggle_hud", toggleListerPanel, nil, "Toggles the Chip Lister HUD element." )
 net.Receive( "CFC_ChipLister_ToggleHUD", toggleListerPanel )
 
 
@@ -83,7 +84,7 @@ end )
 hook.Add( "PopulateToolMenu", "CFC_ChipLister_PopulateToolMenu", function()
     spawnmenu.AddToolMenuOption( "Options", "CFC", "cfc_chiplister", "#Chip Lister", "", "", function( panel )
         panel:CheckBox( "Enable E2/SF Lister", "cfc_chiplister_enabled" )
-        panel:Button( "Open Chip Lister on HUD", "cfc_chiplister_open_hud" )
+        panel:Button( "Toggle Chip Lister on HUD", "cfc_chiplister_toggle_hud" )
     end )
 end )
 
