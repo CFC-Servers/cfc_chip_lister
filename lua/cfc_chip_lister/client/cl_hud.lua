@@ -1,13 +1,15 @@
 local listerPanel
 local ignoringPosConvars = false
 
-local PANEL_MIN_SIZE_FRAC = 300 / 1080
+local PANEL_DEFAULT_POS_FRAC_X = 50 / 1920
+local PANEL_DEFAULT_POS_FRAC_Y = 25 / 1080
 local PANEL_DEFAULT_SIZE_FRAC = 400 / 1080
+local PANEL_MIN_SIZE_FRAC = 300 / 1080
 
 local PANEL_PERSIST = CreateClientConVar( "cfc_chiplister_hud_persist", 0, true, true, "Causes the chiplister HUD element to persist across sessions." )
-local PANEL_POS_X = CreateClientConVar( "cfc_chiplister_hud_pos_x", 50, true, false, "X-Position of the chiplister HUD element." )
-local PANEL_POS_Y = CreateClientConVar( "cfc_chiplister_hud_pos_y", 25, true, false, "Y-Position of the chiplister HUD element." )
-local PANEL_SIZE_FRAC = CreateClientConVar( "cfc_chiplister_hud_size_frac", -1, true, false, "Fractional size of the chiplister HUD element. -1 For the addon default.", -1, 1 )
+local PANEL_POS_FRAC_X = CreateClientConVar( "cfc_chiplister_hud_pos_frac_x", -1, true, false, "Fractional X-Position of the chiplister HUD element. -1 for the addon default.", -1, 1 )
+local PANEL_POS_FRAC_Y = CreateClientConVar( "cfc_chiplister_hud_pos_frac_y", -1, true, false, "Fractional Y-Position of the chiplister HUD element. -1 for the addon default.", -1, 1 )
+local PANEL_SIZE_FRAC = CreateClientConVar( "cfc_chiplister_hud_size_frac", -1, true, false, "Fractional size of the chiplister HUD element. -1 for the addon default.", -1, 1 )
 
 local LISTER_ENABLED = GetConVar( "cfc_chiplister_enabled" )
 
@@ -23,6 +25,18 @@ local function getSizeFromConvar()
     return clampSize( frac * ScrH() )
 end
 
+local function getPosFromConvar( fracX, fracY )
+    fracX = fracX or PANEL_POS_FRAC_X:GetFloat()
+    if fracX < 0 then fracX = PANEL_DEFAULT_POS_FRAC_X end
+    fracX = math.Clamp( fracX, 0, 1 )
+
+    fracY = fracY or PANEL_POS_FRAC_Y:GetFloat()
+    if fracY < 0 then fracY = PANEL_DEFAULT_POS_FRAC_Y end
+    fracY = math.Clamp( fracY, 0, 1 )
+
+    return fracX * ScrW(), fracY * ScrH()
+end
+
 local function openListerPanel()
     if IsValid( listerPanel ) then
         listerPanel:Show()
@@ -33,7 +47,7 @@ local function openListerPanel()
 
     listerPanel = vgui.Create( "DFrame" )
     listerPanel:SetSize( getSizeFromConvar(), getSizeFromConvar() )
-    listerPanel:SetPos( PANEL_POS_X:GetInt(), PANEL_POS_Y:GetInt() )
+    listerPanel:SetPos( getPosFromConvar() )
     listerPanel:SetSizable( true )
     listerPanel:SetScreenLock( true )
     listerPanel:SetTitle( "E2/SF Lister    (Open chat for cursor)" )
@@ -69,8 +83,8 @@ local function openListerPanel()
         if not noConvar then
             local oldState = ignoringPosConvars
             ignoringPosConvars = true
-            PANEL_POS_X:SetInt( x )
-            PANEL_POS_Y:SetInt( y )
+            PANEL_POS_FRAC_X:SetFloat( x / ScrW() )
+            PANEL_POS_FRAC_Y:SetFloat( y / ScrH() )
             ignoringPosConvars = oldState
         end
     end
@@ -100,12 +114,11 @@ local function toggleListerPanel()
     end
 end
 
-local function setPosFromConvar( x, y )
+local function setPosFromConvar( fracX, fracY )
     if ignoringPosConvars then return end
     if not IsValid( listerPanel ) then return end
 
-    x = x or PANEL_POS_X:GetInt()
-    y = y or PANEL_POS_Y:GetInt()
+    local x, y = getPosFromConvar( fracX, fracY )
     listerPanel:SetPos( x, y, true )
 end
 
@@ -121,11 +134,11 @@ concommand.Add( "cfc_chiplister_toggle_hud", toggleListerPanel, nil, "Toggles th
 net.Receive( "CFC_ChipLister_ToggleHUD", toggleListerPanel )
 
 
-cvars.AddChangeCallback( "cfc_chiplister_hud_pos_x", function( _, _, new )
+cvars.AddChangeCallback( "cfc_chiplister_hud_pos_frac_x", function( _, _, new )
     setPosFromConvar( tonumber( new ), nil )
 end, "CFC_ShipLister_MoveHUD" )
 
-cvars.AddChangeCallback( "cfc_chiplister_hud_pos_y", function( _, _, new )
+cvars.AddChangeCallback( "cfc_chiplister_hud_pos_frac_y", function( _, _, new )
     setPosFromConvar( nil, tonumber( new ) )
 end, "CFC_ShipLister_MoveHUD" )
 
@@ -142,8 +155,8 @@ hook.Add( "PopulateToolMenu", "CFC_ChipLister_PopulateToolMenu", function()
         local btnReset = panel:Button( "Reset HUD Position" )
 
         function btnReset:DoClick()
-            PANEL_POS_X:Revert()
-            PANEL_POS_Y:Revert()
+            PANEL_POS_FRAC_X:Revert()
+            PANEL_POS_FRAC_Y:Revert()
         end
     end )
 end )
