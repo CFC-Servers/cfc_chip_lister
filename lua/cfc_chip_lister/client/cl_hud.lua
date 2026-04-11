@@ -1,15 +1,27 @@
 local listerPanel
 local ignoringPosConvars = false
 
-local PANEL_MIN_SIZE = 200
+local PANEL_MIN_SIZE_FRAC = 200 / 1080
+local PANEL_DEFAULT_SIZE_FRAC = 400 / 1080
 
 local PANEL_PERSIST = CreateClientConVar( "cfc_chiplister_hud_persist", 0, true, true, "Causes the chiplister HUD element to persist across sessions." )
 local PANEL_POS_X = CreateClientConVar( "cfc_chiplister_hud_pos_x", 50, true, false, "X-Position of the chiplister HUD element." )
 local PANEL_POS_Y = CreateClientConVar( "cfc_chiplister_hud_pos_y", 25, true, false, "Y-Position of the chiplister HUD element." )
-local PANEL_SIZE = CreateClientConVar( "cfc_chiplister_hud_size", 275, true, false, "Size of the chiplister HUD element." )
+local PANEL_SIZE_FRAC = CreateClientConVar( "cfc_chiplister_hud_size_frac", -1, true, false, "Fractional size of the chiplister HUD element. -1 For the addon default.", -1, 1 )
 
 local LISTER_ENABLED = GetConVar( "cfc_chiplister_enabled" )
 
+
+local function clampSize( size )
+    return math.max( size, ScrH() * PANEL_MIN_SIZE_FRAC )
+end
+
+local function getSizeFromConvar()
+    local frac = PANEL_SIZE_FRAC:GetFloat()
+    if frac < 0 then frac = PANEL_DEFAULT_SIZE_FRAC end
+
+    return clampSize( frac * ScrH() )
+end
 
 local function openListerPanel()
     if IsValid( listerPanel ) then
@@ -20,7 +32,7 @@ local function openListerPanel()
     end
 
     listerPanel = vgui.Create( "DFrame" )
-    listerPanel:SetSize( PANEL_SIZE:GetInt(), PANEL_SIZE:GetInt() )
+    listerPanel:SetSize( getSizeFromConvar(), getSizeFromConvar() )
     listerPanel:SetPos( PANEL_POS_X:GetInt(), PANEL_POS_Y:GetInt() )
     listerPanel:SetSizable( true )
     listerPanel:SetScreenLock( true )
@@ -65,10 +77,10 @@ local function openListerPanel()
 
     local _SetSize = listerPanel.SetSize
     function listerPanel:SetSize( w, h )
-        local size = math.max( math.min( w, h ), PANEL_MIN_SIZE ) -- Keep it as a square
+        local size = clampSize( math.min( w, h ) ) -- Keep it as a square
 
         _SetSize( self, size, size )
-        LocalPlayer():ConCommand( "cfc_chiplister_hud_size " .. size )
+        PANEL_SIZE_FRAC:SetFloat( size / 1080 )
     end
 
     LocalPlayer():ConCommand( "cfc_chiplister_hud_persist 1" )
