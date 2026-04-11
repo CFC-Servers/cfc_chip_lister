@@ -1,7 +1,7 @@
 local listerPanel
 local ignoringPosConvars = false
 
-local PANEL_MIN_SIZE_FRAC = 200 / 1080
+local PANEL_MIN_SIZE_FRAC = 300 / 1080
 local PANEL_DEFAULT_SIZE_FRAC = 400 / 1080
 
 local PANEL_PERSIST = CreateClientConVar( "cfc_chiplister_hud_persist", 0, true, true, "Causes the chiplister HUD element to persist across sessions." )
@@ -36,7 +36,7 @@ local function openListerPanel()
     listerPanel:SetPos( PANEL_POS_X:GetInt(), PANEL_POS_Y:GetInt() )
     listerPanel:SetSizable( true )
     listerPanel:SetScreenLock( true )
-    listerPanel:SetTitle( "E2/SF Lister" )
+    listerPanel:SetTitle( "E2/SF Lister    (Open chat for cursor)" )
 
     local imagePanel = vgui.Create( "DImage", listerPanel )
     imagePanel:SetPos( 10, 35 )
