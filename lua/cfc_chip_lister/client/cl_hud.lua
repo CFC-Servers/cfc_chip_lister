@@ -34,7 +34,11 @@ local function getPosFromConvar( fracX, fracY )
     if fracY < 0 then fracY = PANEL_DEFAULT_POS_FRAC_Y end
     fracY = math.Clamp( fracY, 0, 1 )
 
-    return fracX * ScrW(), fracY * ScrH()
+    local size = getSizeFromConvar()
+    local x = math.Clamp( fracX * ScrW(), 0, ScrW() - size )
+    local y = math.Clamp( fracY * ScrH(), 0, ScrH() - size )
+
+    return x, y
 end
 
 local function openListerPanel()
