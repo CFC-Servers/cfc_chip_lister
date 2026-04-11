@@ -94,7 +94,7 @@ local function openListerPanel()
         local size = clampSize( math.min( w, h ) ) -- Keep it as a square
 
         _SetSize( self, size, size )
-        PANEL_SIZE_FRAC:SetFloat( size / 1080 )
+        PANEL_SIZE_FRAC:SetFloat( size / ScrH() )
     end
 
     LocalPlayer():ConCommand( "cfc_chiplister_hud_persist 1" )
