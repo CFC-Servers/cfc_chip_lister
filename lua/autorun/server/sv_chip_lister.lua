@@ -361,7 +361,7 @@ hook.Add( "PlayerDisconnected", "CFC_ChipLister_UpdateListUserCount", function( 
 end )
 
 hook.Add( "PlayerSay", "CFC_ChipLister_ToggleHUD", function( ply, msg )
-    if msg ~= TOGGLE_HUD_COMMAND then return end
+    if msg:lower() ~= TOGGLE_HUD_COMMAND then return end
 
     net.Start( "CFC_ChipLister_ToggleHUD" )
     net.Send( ply )
